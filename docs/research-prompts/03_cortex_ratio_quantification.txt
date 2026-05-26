@@ -1,0 +1,12 @@
+Project: Lithic-Analysis-Platform
+Source: open_heritage_software_project_scopes.md — Project 7
+======================================================================
+
+CONTEXT:
+I am building an open-source 3D lithic (stone tool) morphological analysis application. I need technical and domain research:
+
+──────────────────────────────────────────────────────────────────────
+
+RESEARCH PROMPT 3:
+
+**3D mesh edge detection**: What algorithms detect edges in 3D triangle meshes? Describe dihedral angle thresholding, ridge detection via shape index, and Gaussian curvature approaches. Which Python/C++ libraries implement these? How are they applied specifically to detect retouched edges on lithic artefacts?
