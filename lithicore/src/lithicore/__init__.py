@@ -11,9 +11,9 @@ exports: orient_auto(mesh, config) -> tuple[trimesh.Trimesh, np.ndarray]
 used_by: lithicope GUI, CLI users
 rules:   No GUI imports. Every public function takes a mesh + config and returns typed results.
 agent:   deepseek-v4-flash | 2026-05-26 | Initial scaffolding
+         deepseek-v4-flash | 2026-05-26 | All modules wired — full public API exported
 """
 
-# _models.py is created in Task 4 (Phase 2). Import restored there.
 # pylint: disable=unused-import
 try:
     from lithicore._models import (
@@ -22,22 +22,25 @@ try:
         ArtefactResult,
         Landmark,
         MeshQualityReport,
+        MeshGrade,
     )
     from lithicore._orientation import orient_auto, orient_manual
+    from lithicore._metrics import extract_metrics
+    from lithicore._edge_detection import detect_edges
+    from lithicore._platform_angle import platform_angles
+    from lithicore._validation import validate_mesh, repair_mesh
+    from lithicore._batch import batch_process
 
     __all__ = [
         "MeasurementConfig", "MeasurementResult", "ArtefactResult", "Landmark",
-        "MeshQualityReport",
+        "MeshQualityReport", "MeshGrade",
         "orient_auto", "orient_manual",
+        "extract_metrics", "detect_edges", "platform_angles",
+        "validate_mesh", "repair_mesh", "batch_process",
     ]
-except ImportError:
-    # Forward reference — _models.py will exist after Task 4
-    MeasurementConfig = None  # type: ignore
-    MeasurementResult = None  # type: ignore
-    ArtefactResult = None  # type: ignore
-    Landmark = None  # type: ignore
-    MeshQualityReport = None  # type: ignore
-    orient_auto = None  # type: ignore
-    orient_manual = None  # type: ignore
-
-    __all__: list[str] = []
+except ImportError as _exc:
+    # Forward reference — all modules exist since Phases 2-4
+    raise ImportError(
+        f"lithicore module import failed: {_exc}. "
+        "Try: pip install --no-deps -e lithicore"
+    ) from _exc
