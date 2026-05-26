@@ -3,7 +3,7 @@
 exports: batch_process(directory, config) -> list[ArtefactResult]
 used_by: CLI entry point, batch runner UI
 rules:   Iterates all .ply, .obj, .stl files in directory.
-         Each artefact: validate → repair (if configured) → orient → measure.
+         Each artefact: validate -> repair (if configured) -> orient -> measure.
          Returns ArtefactResult list with one entry per file.
 agent:   deepseek-v4-flash | 2026-05-26 | Initial implementation
 """
