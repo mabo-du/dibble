@@ -59,10 +59,19 @@ class TestPhotogrammetryConfig:
             output_path=Path("/out.ply"),
             quality="invalid",
         )
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError, match="Unknown quality"):
             _ = config.target_faces
 
-    def test_mode_validates_expert_fields_present(self):
+    def test_post_init_coerces_paths(self):
+        """Str inputs should be coerced to Path."""
+        config = PhotogrammetryConfig(
+            photo_folder="/photos",
+            output_path="/out.ply",
+        )
+        assert isinstance(config.photo_folder, Path)
+        assert isinstance(config.output_path, Path)
+
+    def test_expert_fields_accept_custom_values(self):
         """Expert mode should accept colmap-specific fields."""
         config = PhotogrammetryConfig(
             photo_folder=Path("/photos"),
