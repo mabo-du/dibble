@@ -19,7 +19,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QMainWindow, QMenuBar, QStatusBar, QSplitter, QWidget,
     QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFileDialog,
-    QMessageBox,
+    QMessageBox, QSlider,
 )
 from PyQt6.QtGui import QAction
 
@@ -40,6 +40,8 @@ class MainWindow(QMainWindow):
         self._current_mesh_path: Optional[Path] = None
         self._current_results: Optional[list] = None
         self._batch_results: List = []
+        self._compare_mesh_path: Optional[Path] = None
+        self._in_comparison_mode: bool = False
 
         self._init_ui()
         self._init_menu()
@@ -53,12 +55,29 @@ class MainWindow(QMainWindow):
         self.viewer = Viewer3D()
         splitter.addWidget(self.viewer)
 
+        # Center: comparison controls (hidden by default)
+        self._compare_widget = QWidget()
+        compare_layout = QVBoxLayout(self._compare_widget)
+        compare_layout.setContentsMargins(5, 5, 5, 5)
+        self._compare_widget.setMaximumWidth(60)
+        self._compare_label = QLabel("Opacity")
+        self._compare_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._opacity_slider = QSlider(Qt.Orientation.Vertical)
+        self._opacity_slider.setRange(0, 100)
+        self._opacity_slider.setValue(50)
+        self._opacity_slider.valueChanged.connect(self._on_opacity_changed)
+        compare_layout.addWidget(self._compare_label)
+        compare_layout.addWidget(self._opacity_slider)
+        compare_layout.addStretch()
+        self._compare_widget.setVisible(False)
+        splitter.addWidget(self._compare_widget)
+
         # Right: results panel
         self.results_panel = ResultsPanel()
         self.results_panel.export_requested.connect(self._on_export)
         splitter.addWidget(self.results_panel)
 
-        splitter.setSizes([720, 480])
+        splitter.setSizes([660, 60, 480])
         self.setCentralWidget(splitter)
 
     def _init_menu(self) -> None:
@@ -94,6 +113,17 @@ class MainWindow(QMainWindow):
         fig_action = QAction("&Publication Figure...", self)
         fig_action.triggered.connect(self._on_publication_figure)
         tools_menu.addAction(fig_action)
+
+        # Comparison mode
+        tools_menu.addSeparator()
+        compare_action = QAction("&Compare with Another Mesh...", self)
+        compare_action.setShortcut("Ctrl+D")
+        compare_action.triggered.connect(self._on_compare)
+        tools_menu.addAction(compare_action)
+
+        clear_compare_action = QAction("&Clear Comparison", self)
+        clear_compare_action.triggered.connect(self._on_clear_comparison)
+        tools_menu.addAction(clear_compare_action)
 
         # Help menu
         help_menu = menu.addMenu("&Help")
@@ -218,3 +248,82 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Exported", f"Figure saved to:\n{path}")
         except Exception as exc:
             QMessageBox.critical(self, "Error", f"Failed to generate figure:\n{exc}")
+
+    def _on_compare(self) -> None:
+        """Compare current mesh with another mesh file."""
+        if self._current_mesh_path is None:
+            QMessageBox.information(self, "No Mesh", "Load a mesh first, then compare.")
+            return
+
+        path_str, _ = QFileDialog.getOpenFileName(
+            self, "Select Mesh to Compare Against", "",
+            "Mesh Files (*.ply *.obj *.stl);;All Files (*)",
+        )
+        if not path_str:
+            return
+        compare_path = Path(path_str)
+
+        self.status.showMessage(f"Loading {compare_path.name} for comparison...")
+        try:
+            import trimesh
+            from lithicore._orientation import orient_auto
+            from lithicore._edge_detection import detect_edges
+            from lithicore._comparison import compare_meshes
+            from lithicore._models import MeasurementConfig
+
+            mesh_a = trimesh.load(str(self._current_mesh_path), force="mesh")
+            mesh_b = trimesh.load(str(compare_path), force="mesh")
+
+            config = MeasurementConfig()
+            oriented_a, _ = orient_auto(mesh_a, config)
+            oriented_b, _ = orient_auto(mesh_b, config)
+            edges_a, _ = detect_edges(oriented_a, config)
+
+            # Show overlay
+            self.viewer.display_comparison(oriented_a, oriented_b, edges_a)
+            self._compare_widget.setVisible(True)
+            self._opacity_slider.setValue(50)
+
+            # Compute metrics
+            result = compare_meshes(oriented_a, oriented_b)
+            self._compare_mesh_path = compare_path
+            self._in_comparison_mode = True
+
+            # Build comparison results display
+            comp_results = [
+                ("hausdorff_distance_mm", f"{result.hausdorff_distance_mm} mm"),
+                ("centroid_distance_mm", f"{result.centroid_distance_mm} mm"),
+                ("volume_difference_mm3", f"{result.volume_difference_mm3} mm³"),
+                ("surface_area_difference_mm2", f"{result.surface_area_difference_mm2} mm²"),
+                ("length_diff_mm", f"{result.length_diff_mm} mm"),
+                ("width_diff_mm", f"{result.width_diff_mm} mm"),
+                ("thickness_diff_mm", f"{result.thickness_diff_mm} mm"),
+            ]
+            from lithicore._models import MeasurementResult
+            results_list = [
+                MeasurementResult(name=n, value=float(v.split()[0]), unit=v.split()[1] if len(v.split()) > 1 else "", confidence=0.9)
+                for n, v in comp_results
+            ]
+
+            self.results_panel.show_measurements(
+                results_list,
+                f"{self._current_mesh_path.stem} vs {compare_path.stem}",
+                "pass",
+            )
+            self.status.showMessage(f"Comparison: {self._current_mesh_path.stem} vs {compare_path.stem}")
+        except Exception as exc:
+            QMessageBox.critical(self, "Error", f"Comparison failed:\n{exc}")
+            self.status.showMessage("Comparison failed")
+
+    def _on_clear_comparison(self) -> None:
+        """Remove comparison overlay and restore single mesh view."""
+        self.viewer.clear_comparison()
+        self._compare_widget.setVisible(False)
+        self._in_comparison_mode = False
+        self._compare_mesh_path = None
+        self.status.showMessage("Comparison cleared")
+
+    def _on_opacity_changed(self, value: int) -> None:
+        """Adjust overlay mesh opacity."""
+        opacity = value / 100.0
+        self.viewer.set_overlay_opacity(opacity)
