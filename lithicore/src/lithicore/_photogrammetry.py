@@ -24,6 +24,17 @@ from typing import Callable, Optional
 import numpy as np
 
 
+__all__ = [
+    "PhotogrammetryConfig",
+    "PhotogrammetryResult",
+    "PhotogrammetryError",
+    "ColmapNotFoundError",
+    "ColmapStageError",
+    "InsufficientPhotosError",
+    "PhotogrammetryCancelledError",
+]
+
+
 # ──────────────────────────────────────────────
 # Error types
 # ──────────────────────────────────────────────
@@ -93,7 +104,13 @@ class PhotogrammetryConfig:
     @property
     def target_faces(self) -> int:
         """Map quality slider to target face count after decimation."""
-        return {"low": 20_000, "medium": 50_000, "high": 150_000}[self.quality]
+        mapping = {"low": 20_000, "medium": 50_000, "high": 150_000}
+        try:
+            return mapping[self.quality]
+        except KeyError:
+            raise ValueError(
+                f"Unknown quality '{self.quality}'; expected 'low', 'medium', or 'high'"
+            ) from None
 
 
 @dataclass
