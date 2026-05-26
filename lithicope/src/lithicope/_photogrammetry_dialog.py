@@ -78,7 +78,7 @@ class PhotogrammetryDialog(QDialog):
     STAGES = [
         "validation", "feature_extraction", "feature_matching",
         "sparse_reconstruction", "dense_undistortion", "dense_stereo",
-        "dense_fusion", "cleaning", "meshing", "decimation", "output",
+        "dense_fusion", "scale_detection", "cleaning", "meshing", "decimation", "output",
     ]
 
     def __init__(
