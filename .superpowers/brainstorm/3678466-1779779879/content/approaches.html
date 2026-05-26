@@ -1,0 +1,87 @@
+<h2>Publication Figure Generator — Approaches</h2>
+<p class="subtitle">Three architectural approaches for generating standardised three-view lithic drawings</p>
+
+<div class="section">
+  <h3>A / Matplotlib-based vector pipeline</h3>
+  <p>Extract orthographic projections (plan/profile/section) from the mesh via vertex projection, render silhouettes and contour lines with Matplotlib, output SVG via <code>svgutils</code> or direct SVG generation. Scale bar and callouts as Matplotlib annotations.</p>
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>Pros</h4>
+      <ul>
+        <li>Vector output natively (SVG, PDF)</li>
+        <li>Full programmatic control over every line</li>
+        <li>No extra rendering dependencies</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>Cons</h4>
+      <ul>
+        <li>Manual silhouette extraction from mesh</li>
+        <li>Harder to get publication-quality contour shading</li>
+        <li>Matplotlib layout can be fiddly</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>B / PyVista render-to-vector pipeline</h3>
+  <p>Use PyVista's parallel projection to capture plan/profile/section views as images, then trace silhouettes using edge detection + vectorisation (potrace or shapely simplify). Compose into SVG layout with scale bar and callouts.</p>
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>Pros</h4>
+      <p>Leverages existing PyVista viewer infrastructure</p>
+      <p>Parallel projection built into VTK</p>
+      <p>Can preview figures interactively</p>
+    </div>
+    <div class="cons">
+      <h4>Cons</h4>
+      <p>Requires raster→vector conversion step</p>
+      <p>Edge tracing can introduce artefacts</p>
+      <p>More complex pipeline (render → trace → layout)</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>C / Trimesh silhouette + SVG composition (recommended)</h3>
+  <p>Extract silhouettes directly from the mesh using trimesh's path module (2D cross-section projection at the mesh boundary). Render internal ridges via curvature-weighted shortest paths (inspired by Lithics3D's igraph approach). Compose everything into a standalone SVG using svgwrite, with parametric scale bars and callouts.</p>
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>Pros</h4>
+      <p>Pure vector from start to finish — no raster step</p>
+      <p>trimesh path module handles silhouette extraction</p>
+      <p>SVG is directly editable in Illustrator/Inkscape</p>
+      <p>Lightest dependency addition</p>
+    </div>
+    <div class="cons">
+      <h4>Cons</h4>
+      <p>Internal ridge rendering needs curvature algorithm work</p>
+      <p>Less visual preview during development</p>
+    </div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Matplotlib pipeline</h3>
+      <p>Matplotlib + SVG for vector output</p>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>PyVista render → trace → vector</h3>
+      <p>Leverage existing renderer</p>
+    </div>
+  </div>
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Trimesh silhouette + SVG</h3>
+      <p>Pure vector, no raster step</p>
+    </div>
+  </div>
+</div>
