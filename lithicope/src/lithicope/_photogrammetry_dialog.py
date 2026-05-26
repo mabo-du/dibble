@@ -13,7 +13,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from PyQt6.QtCore import QThread, pyqtSignal, Qt
+from PyQt6.QtCore import QThread, pyqtSignal, Qt, QTimer
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -235,6 +235,8 @@ class PhotogrammetryDialog(QDialog):
         expert_form.addRow("Max vertices:", self._max_vertices_edit)
         self._keep_temp_check = QCheckBox("Keep temporary files")
         expert_form.addRow(self._keep_temp_check)
+        self._gpu_check = QCheckBox("Use GPU acceleration (CUDA)")
+        expert_form.addRow(self._gpu_check)
         self._crop_margin_combo = QComboBox()
         self._crop_margin_combo.addItems(["1.0x", "1.5x", "2.0x", "3.0x"])
         self._crop_margin_combo.setCurrentText("1.5x")
@@ -263,7 +265,25 @@ class PhotogrammetryDialog(QDialog):
             layout.addLayout(row)
             self._stage_widgets[stage] = (label, bar)
 
-        layout.addStretch()
+        # Live preview area
+        self._preview_label = QLabel("")
+        self._preview_label.setMinimumHeight(80)
+        self._preview_label.setStyleSheet(
+            "background-color: #f0f0f0; border: 1px solid #ccc; "
+            "border-radius: 4px; padding: 8px; font-family: monospace;"
+        )
+        self._preview_label.setWordWrap(True)
+        self._preview_label.setAlignment(
+            Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter
+        )
+        layout.addWidget(self._preview_label)
+
+        # Timer for live point cloud polling
+        self._preview_timer = QTimer()
+        self._preview_timer.setInterval(2000)  # poll every 2s
+        self._preview_timer.timeout.connect(self._poll_preview)
+        self._preview_timer_active = False
+
         btn_row = QHBoxLayout()
         btn_row.addStretch()
         self._cancel_pipeline_btn = QPushButton("Cancel")
@@ -346,6 +366,7 @@ class PhotogrammetryDialog(QDialog):
             except ValueError:
                 pass
             config.cleanup_temp = not self._keep_temp_check.isChecked()
+            config.use_gpu = self._gpu_check.isChecked()
 
         return config
 
@@ -356,6 +377,11 @@ class PhotogrammetryDialog(QDialog):
         for stage, (label, bar) in self._stage_widgets.items():
             label.setText(f"\u25cb {stage.replace('_', ' ').title()}")
             bar.setValue(0)
+
+        self._preview_label.setText("Processing... preview will appear as stages complete")
+        self._current_config = config
+        self._preview_timer_active = True
+        self._preview_timer.start()
 
         self._worker = PhotogrammetryWorker(config)
         self._worker.progress.connect(self._on_progress)
@@ -370,6 +396,8 @@ class PhotogrammetryDialog(QDialog):
             bar.setValue(int(progress * 100))
 
     def _on_pipeline_finished(self, result: object) -> None:
+        self._preview_timer.stop()
+        self._preview_timer_active = False
         pr = result  # type: PhotogrammetryResult
         self._result = pr
 
@@ -394,17 +422,70 @@ class PhotogrammetryDialog(QDialog):
         self._scale_btn.setVisible(has_scale_warning)
 
     def _on_pipeline_error(self, error_msg: str) -> None:
+        self._preview_timer.stop()
+        self._preview_timer_active = False
         from PyQt6.QtWidgets import QMessageBox
         QMessageBox.critical(self, "Photogrammetry Error", error_msg)
         self._stack.setCurrentIndex(0)
 
+    def _poll_preview(self) -> None:
+        """Poll for new point cloud meshes and update preview."""
+        if not hasattr(self, '_current_config'):
+            return
+
+        workspace = self._current_config.colmap_workspace
+        if workspace is None:
+            return
+
+        # Check for fused point cloud
+        fused = workspace / "fused.ply"
+        if fused.exists():
+            import trimesh
+            try:
+                cloud = trimesh.load(str(fused))
+                n_pts = len(cloud.vertices) if hasattr(cloud, 'vertices') else 0
+                self._preview_label.setText(
+                    f"\U0001f4ca Dense point cloud: {n_pts:,} points\n"
+                    f"  \u2192 Full preview available on result page"
+                )
+                return
+            except Exception:
+                pass
+
+        # Check for mesh
+        mesh_ply = workspace / "mesh.ply"
+        if mesh_ply.exists():
+            import trimesh
+            try:
+                mesh = trimesh.load(str(mesh_ply))
+                n_faces = len(mesh.faces) if hasattr(mesh, 'faces') else 0
+                n_verts = len(mesh.vertices) if hasattr(mesh, 'vertices') else 0
+                self._preview_label.setText(
+                    f"\U0001f3d4\ufe0f Mesh generated: {n_faces:,} faces, {n_verts:,} vertices\n"
+                    f"  \u2192 Opening in viewer on completion"
+                )
+                return
+            except Exception:
+                pass
+
+        # Check for any progress files in workspace
+        files = list(workspace.iterdir()) if workspace.exists() else []
+        if files:
+            self._preview_label.setText(
+                f"\u2699 Processing... ({len(files)} files in workspace)"
+            )
+
     def _cancel_pipeline(self) -> None:
+        self._preview_timer.stop()
+        self._preview_timer_active = False
         if self._worker:
             self._worker.cancel()
         self._cancel_pipeline_btn.setEnabled(False)
         self._cancel_pipeline_btn.setText("Cancelling...")
 
     def closeEvent(self, event) -> None:  # type: ignore
+        self._preview_timer.stop()
+        self._preview_timer_active = False
         if self._worker and self._worker.isRunning():
             self._worker.cancel()
             self._worker.wait(3000)
