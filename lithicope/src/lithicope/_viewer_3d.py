@@ -31,7 +31,8 @@ class Viewer3D(QWidget):
     """PyQt6 widget wrapping a PyVista interactive 3D viewport.
 
     Supports single mesh display and dual-mesh comparison overlay.
-    Also supports interactive 3D landmark placement via point picking.
+    Also supports interactive 3D landmark placement via point picking
+    and scar overlay visualisation.
     """
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
@@ -267,6 +268,73 @@ class Viewer3D(QWidget):
             self.plotter.remove_actor(actor, render=False)
         self._landmark_actors.clear()
         self.disable_landmark_mode()
+        self.plotter.render()
+
+    # ── Scar overlay ───────────────────────────────────────────
+
+    def show_scar_overlay(self, face_labels: np.ndarray) -> None:
+        """Colour mesh faces by scar label for visualisation.
+
+        Each scar gets a distinct colour from a preset palette.
+        Non-scar faces remain light gray.
+        """
+        if not HAS_PYVISTAQT or self._pv_mesh is None:
+            return
+
+        # Generate colours for each scar
+        scar_ids = np.unique(face_labels[face_labels >= 0])
+        palette = [
+            (0.9, 0.2, 0.2),  # Red
+            (0.2, 0.6, 0.9),  # Blue
+            (0.2, 0.8, 0.3),  # Green
+            (0.9, 0.6, 0.1),  # Orange
+            (0.6, 0.2, 0.8),  # Purple
+            (0.9, 0.4, 0.6),  # Pink
+            (0.3, 0.7, 0.7),  # Teal
+            (0.7, 0.5, 0.2),  # Brown
+        ]
+
+        # Build per-face colour array
+        n_faces = len(face_labels)
+        face_colors = np.ones((n_faces, 3), dtype=float) * 0.85  # light gray base
+
+        for i, sid in enumerate(scar_ids):
+            scar_faces = np.where(face_labels == sid)[0]
+            colour = palette[i % len(palette)]
+            face_colors[scar_faces] = colour
+
+        # Apply to the mesh
+        self._pv_mesh.face_data["scar_labels"] = face_labels
+        if self._main_mesh_actor is not None:
+            self.plotter.remove_actor(self._main_mesh_actor, render=False)
+
+        self._main_mesh_actor = self.plotter.add_mesh(
+            self._pv_mesh,
+            scalars=face_colors,
+            rgb=True,
+            show_edges=True,
+            edge_color="black",
+            line_width=0.5,
+            smooth_shading=True,
+            lighting=True,
+        )
+        self.plotter.render()
+
+    def clear_scar_overlay(self) -> None:
+        """Restore default mesh appearance."""
+        if not HAS_PYVISTAQT or self._pv_mesh is None:
+            return
+        # Re-add mesh with default appearance
+        if self._main_mesh_actor is not None:
+            self.plotter.remove_actor(self._main_mesh_actor, render=False)
+        self._main_mesh_actor = self.plotter.add_mesh(
+            self._pv_mesh,
+            color="lightgray",
+            show_edges=False,
+            smooth_shading=True,
+            lighting=True,
+            opacity=1.0,
+        )
         self.plotter.render()
 
     # ── Scene management ────────────────────────────────────────

@@ -144,6 +144,16 @@ class MainWindow(QMainWindow):
         clear_lm_action.triggered.connect(self._on_clear_landmarks)
         tools_menu.addAction(clear_lm_action)
 
+        # Scar detection
+        tools_menu.addSeparator()
+        scar_action = QAction("&Detect Flake Scars", self)
+        scar_action.triggered.connect(self._on_detect_scars)
+        tools_menu.addAction(scar_action)
+
+        clear_scar_action = QAction("&Clear Scar Overlay", self)
+        clear_scar_action.triggered.connect(self._on_clear_scars)
+        tools_menu.addAction(clear_scar_action)
+
         # Help menu
         help_menu = menu.addMenu("&Help")
         about_action = QAction("&About", self)
@@ -429,3 +439,59 @@ class MainWindow(QMainWindow):
         self._in_landmark_mode = False
         self.results_panel.show_measurements([], "No landmarks", MeshGrade.PASS)
         self.status.showMessage("All landmarks cleared")
+
+    # ── Scar detection ─────────────────────────────────────────
+
+    def _on_detect_scars(self) -> None:
+        """Run flake scar detection on the current mesh."""
+        if self._current_mesh_path is None:
+            QMessageBox.information(self, "No Mesh", "Load a mesh first.")
+            return
+
+        self.status.showMessage("Detecting flake scars...")
+        try:
+            from lithicore._scar_detection import detect_scars, ScarConfig
+            from lithicore._models import MeasurementResult
+            import trimesh
+
+            mesh = trimesh.load(str(self._current_mesh_path), force="mesh")
+            config = ScarConfig()
+            result = detect_scars(mesh, config)
+
+            # Show coloured overlay
+            self.viewer.show_scar_overlay(result.face_labels)
+
+            # Build results
+            scar_msgs = []
+            if result.scar_count > 0:
+                for scar in result.scars:
+                    scar_msgs.append(
+                        f"Scar {scar.index + 1}: {scar.area_mm2:.2f} mm², "
+                        f"depth={scar.max_depth_mm:.2f}"
+                    )
+                results = [
+                    MeasurementResult(name="Scar Count", value=float(result.scar_count), unit="", confidence=0.9),
+                    MeasurementResult(name="Total Scar Area", value=result.total_scar_area_mm2, unit="mm²", confidence=0.85),
+                    MeasurementResult(name="Scar Density", value=result.scar_density, unit="", confidence=0.85),
+                ]
+                self.results_panel.show_measurements(
+                    results,
+                    f"{self._current_mesh_path.stem} — {result.scar_count} scars",
+                    MeshGrade.PASS,
+                )
+            else:
+                self.results_panel.show_measurements(
+                    [MeasurementResult(name="Scars Detected", value=0.0, unit="", confidence=1.0)],
+                    f"{self._current_mesh_path.stem} — No scars found",
+                    MeshGrade.PASS,
+                )
+
+            self.status.showMessage(f"Scar detection complete: {result.scar_count} scars")
+        except Exception as exc:
+            QMessageBox.critical(self, "Error", f"Scar detection failed:\n{exc}")
+            self.status.showMessage("Scar detection failed")
+
+    def _on_clear_scars(self) -> None:
+        """Remove scar overlay and restore default mesh appearance."""
+        self.viewer.clear_scar_overlay()
+        self.status.showMessage("Scar overlay cleared")
