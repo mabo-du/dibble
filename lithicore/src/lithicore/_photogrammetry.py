@@ -21,7 +21,7 @@ from __future__ import annotations
 import subprocess
 import shutil
 import tempfile
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -196,7 +196,7 @@ def _validate_inputs(config: PhotogrammetryConfig) -> int:
     """
     if not config.photo_folder.is_dir():
         raise InsufficientPhotosError(
-            f"Photo folder does not exist: {config.photo_folder}"
+            f"Photo folder must be an existing directory: {config.photo_folder}"
         )
 
     photos = [
@@ -269,7 +269,12 @@ class PhotogrammetryConfig:
 
 @dataclass
 class PhotogrammetryResult:
-    """Output of a completed photogrammetry pipeline run."""
+    """Output of a completed photogrammetry pipeline run.
+
+    Note: camera_count is the number of input photos, not necessarily
+    the number of successfully registered cameras. COLMAP may fail to
+    register some images (blurry, no feature matches).
+    """
     mesh_path: Path
     artefact_label: str
     camera_count: int
@@ -525,7 +530,7 @@ def run_pipeline(
                     progress_cb,
                     workspace,
                 )
-            except (ColmapStageError, Exception) as exc:
+            except ColmapStageError as exc:
                 warnings.append(f"Poisson meshing failed: {exc}. Using convex hull fallback.")
                 if cleaned_points is not None and len(cleaned_points) > 3:
                     from trimesh.points import PointCloud
@@ -567,7 +572,7 @@ def run_pipeline(
 
         # Find sparse cloud
         sparse_cloud = None
-        for candidate in [sparse_path / "0" / "points3D.bin", sparse_path / "points3D.ply"]:
+        for candidate in [sparse_path / "0" / "points3D.bin", sparse_path / "0" / "points3D.txt"]:
             if candidate.exists():
                 sparse_cloud = candidate
                 break
