@@ -23,10 +23,12 @@ try:
         Landmark,
         MeshQualityReport,
     )
+    from lithicore._orientation import orient_auto, orient_manual
 
     __all__ = [
         "MeasurementConfig", "MeasurementResult", "ArtefactResult", "Landmark",
         "MeshQualityReport",
+        "orient_auto", "orient_manual",
     ]
 except ImportError:
     # Forward reference — _models.py will exist after Task 4
@@ -35,5 +37,7 @@ except ImportError:
     ArtefactResult = None  # type: ignore
     Landmark = None  # type: ignore
     MeshQualityReport = None  # type: ignore
+    orient_auto = None  # type: ignore
+    orient_manual = None  # type: ignore
 
     __all__: list[str] = []
