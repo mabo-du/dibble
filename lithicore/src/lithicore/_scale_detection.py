@@ -9,6 +9,7 @@ rules:   Pure functions, no GUI imports. Scale detection operates on sparse clou
          + source photos, not dense mesh.
 agent:   deepseek-v4-flash | 2026-05-27 | Initial — dataclass + mesh transform
 agent:   deepseek-v4-flash | 2026-05-27 | Added ArUco detection + COLMAP I/O + triangulation
+agent:   deepseek-v4-flash | 2026-05-27 | Added ruler/scale bar detection via Hough lines
 """
 
 from __future__ import annotations
@@ -330,4 +331,122 @@ def detect_scale_aruco(
         method="aruco",
         confidence=confidence,
         detected_length_mm=marker_size_mm,
+    )
+
+
+# ──────────────────────────────────────────────
+# Ruler/scale bar detection
+# ──────────────────────────────────────────────
+
+def detect_scale_ruler(
+    photo_dir: Path,
+    sparse_dir: Optional[Path],
+) -> Optional[ScaleResult]:
+    """Detect a standard ruler in photos and estimate scale.
+
+    Uses adaptive thresholding, Canny edge detection, Hough lines,
+    and tick mark frequency analysis to locate a ruler and compute
+    a pixel-per-mm estimate.
+
+    Args:
+        photo_dir: Directory containing input photos.
+        sparse_dir: Optional — not used for this method (kept for API consistency).
+
+    Returns:
+        ScaleResult if a ruler was detected, None otherwise.
+    """
+    try:
+        import cv2
+    except ImportError:
+        return ScaleResult(
+            scale_factor=1.0, method="ruler", confidence=0.0,
+            detected_length_mm=0.0,
+            warnings=["OpenCV not installed. Install: pip install opencv-python"],
+        )
+
+    from scipy.signal import argrelextrema
+
+    photos = _read_photos(photo_dir)
+    if not photos:
+        return None
+
+    # Sample up to 5 photos
+    sample = photos[:5]
+    ratios: list[float] = []
+
+    for photo_path in sample:
+        img = cv2.imread(str(photo_path), cv2.IMREAD_GRAYSCALE)
+        if img is None:
+            continue
+
+        # Adaptive threshold for varied lighting
+        thresh = cv2.adaptiveThreshold(
+            img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv2.THRESH_BINARY_INV, 21, 4,
+        )
+
+        # Edge detection
+        edges = cv2.Canny(thresh, 50, 150)
+
+        # Hough line detection
+        lines = cv2.HoughLinesP(
+            edges, rho=1, theta=np.pi / 180,
+            threshold=100, minLineLength=50, maxLineGap=10,
+        )
+
+        if lines is None or len(lines) < 2:
+            continue
+
+        # Longest line = likely ruler edge
+        longest = max(lines, key=lambda l: np.linalg.norm(
+            [l[0][2] - l[0][0], l[0][3] - l[0][1]]
+        ))
+        x1, y1, x2, y2 = longest[0]
+        line_len = float(np.linalg.norm([x2 - x1, y2 - y1]))
+
+        # Extract intensity profile along the ruler
+        n = 200
+        profile = np.zeros(n)
+        for i in range(n):
+            t = i / (n - 1)
+            xi = int(x1 + t * (x2 - x1))
+            yi = int(y1 + t * (y2 - y1))
+            if 0 <= xi < img.shape[1] and 0 <= yi < img.shape[0]:
+                profile[i] = img[yi, xi]
+
+        # Normalize
+        pmin, pmax = profile.min(), profile.max()
+        if pmax == pmin:
+            continue
+        profile = (profile - pmin) / (pmax - pmin)
+
+        # Find tick mark minima
+        minima = argrelextrema(profile, np.less, order=5)[0]
+        if len(minima) < 3:
+            continue
+
+        # Spacing in pixels between tick marks
+        spacing_px = np.diff(minima).mean() / n * line_len
+        if spacing_px > 0:
+            ratios.append(spacing_px)
+
+    if len(ratios) < 2:
+        return None
+
+    arr = np.array(ratios)
+    med = float(np.median(arr))
+    std = float(arr.std())
+    valid = arr[np.abs(arr - med) <= 2 * std]
+    if len(valid) < 2:
+        return None
+
+    px_per_mm = float(np.median(valid))
+    confidence = min(0.5, len(valid) * 0.1)
+
+    return ScaleResult(
+        scale_factor=px_per_mm,
+        method="ruler",
+        confidence=confidence,
+        detected_length_mm=1.0,
+        warnings=["Ruler-based scale is approximate (2D estimate)"],
     )
