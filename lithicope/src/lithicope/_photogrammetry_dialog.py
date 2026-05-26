@@ -288,6 +288,9 @@ class PhotogrammetryDialog(QDialog):
         self._save_as_btn = QPushButton("Save Mesh As...")
         self._save_as_btn.clicked.connect(self._save_mesh_as)
         btn_row.addWidget(self._save_as_btn)
+        self._scale_btn = QPushButton("Set Scale Manually...")
+        self._scale_btn.clicked.connect(self._open_scale_mode)
+        btn_row.addWidget(self._scale_btn)
         close_btn = QPushButton("Close")
         close_btn.clicked.connect(self.accept)
         btn_row.addWidget(close_btn)
@@ -386,6 +389,10 @@ class PhotogrammetryDialog(QDialog):
         self._result_details.setText(details)
         self._stack.setCurrentIndex(2)
 
+        # Show scale button only if scale was not detected
+        has_scale_warning = any("No scale reference" in w for w in pr.warnings)
+        self._scale_btn.setVisible(has_scale_warning)
+
     def _on_pipeline_error(self, error_msg: str) -> None:
         from PyQt6.QtWidgets import QMessageBox
         QMessageBox.critical(self, "Photogrammetry Error", error_msg)
@@ -427,6 +434,62 @@ class PhotogrammetryDialog(QDialog):
         if path_str:
             import shutil
             shutil.copy2(self._result.mesh_path, path_str)
+
+    def _open_scale_mode(self) -> None:
+        """Open mesh in viewer in scale measurement mode."""
+        if self._result:
+            parent = self.parent()
+            while parent is not None:
+                if hasattr(parent, 'viewer'):
+                    viewer = parent.viewer
+                    viewer.enable_scale_mode(self._on_scale_complete)
+                    break
+                parent = parent.parent()
+            self.accept()
+
+    def _on_scale_complete(self, ax: float, ay: float, az: float,
+                           bx: float, by: float, bz: float) -> None:
+        """Callback when user has picked two points in scale mode."""
+        from PyQt6.QtWidgets import QInputDialog, QMessageBox
+        import numpy as np
+        import trimesh
+
+        # Calculate distance between points in arbitrary units
+        dist_arb = float(np.linalg.norm([bx - ax, by - ay, bz - az]))
+        if dist_arb <= 0:
+            QMessageBox.warning(None, "Scale Error",
+                                "Points are too close together. Try again.")
+            return
+
+        # Ask user for real-world distance
+        mm, ok = QInputDialog.getDouble(
+            None, "Set Scale",
+            f"Distance between points: {dist_arb:.2f} arbitrary units\n"
+            "Enter real-world distance in millimetres:",
+            decimals=2, min=0.01, max=10000.0,
+        )
+        if not ok or mm <= 0:
+            return
+
+        scale_factor = mm / dist_arb
+
+        # Find the main window and apply scale to the mesh
+        parent = self.parent()
+        while parent is not None:
+            if hasattr(parent, 'viewer') and hasattr(parent, '_mesh'):
+                mesh = parent._mesh
+                if mesh is not None:
+                    from lithicore._scale_detection import apply_scale_to_mesh
+                    scaled = apply_scale_to_mesh(mesh, scale_factor)
+                    parent._mesh = scaled
+                    parent.viewer.display_mesh(scaled)
+                    QMessageBox.information(
+                        None, "Scale Set",
+                        f"Scale factor: {scale_factor:.4f}\n"
+                        f"Distance set to {mm:.1f} mm",
+                    )
+                break
+            parent = parent.parent()
 
     def _show_colmap_warning(self) -> None:
         from PyQt6.QtWidgets import QMessageBox
