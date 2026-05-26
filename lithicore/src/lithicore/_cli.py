@@ -2,8 +2,9 @@
 
 exports: app (typer.Typer)
 used_by: Users running `lithicore batch --input ...`
-rules:   Typer-based CLI. Subcommands: batch, info, figure.
+rules:   Typer-based CLI. Subcommands: batch, info, figure, photogrammetry.
 agent:   deepseek-v4-flash | 2026-05-26 | Initial implementation
+agent:   deepseek-v4-flash | 2026-05-26 | Added photogrammetry CLI subcommand
 """
 
 from __future__ import annotations
@@ -93,6 +94,103 @@ def figure(
     )
     figure_cli(mesh_path, output, config)
     typer.echo(f"Figure saved to {output}")
+
+
+@app.command()
+def photogrammetry(
+    photo_folder: Path = typer.Argument(..., help="Folder containing photos (jpg/png/tiff)"),
+    output: Path = typer.Option("mesh.ply", "--output", "-o", help="Output mesh path"),
+    label: str = typer.Option("", "--label", "-l", help="Artefact label"),
+    quality: str = typer.Option("high", "--quality", "-q", help="Mesh quality: low, medium, high"),
+    colmap_feature_type: str = typer.Option("sift", "--colmap-feature-type", help="COLMAP feature type"),
+    colmap_matching: str = typer.Option("exhaustive", "--colmap-matching", help="Matching strategy"),
+    dense_quality: str = typer.Option("extreme", "--dense-quality", help="Dense reconstruction quality"),
+    batch: bool = typer.Option(False, "--batch", help="Batch mode: each sub-folder is one artefact"),
+    batch_output: Optional[Path] = typer.Option(None, "--batch-output", help="Output directory for batch results"),
+) -> None:
+    """Run photogrammetry pipeline: photos → 3D mesh via COLMAP."""
+    from lithicore._photogrammetry import (
+        PhotogrammetryConfig,
+        run_pipeline,
+    )
+
+    if batch:
+        output_dir = batch_output or photo_folder / "results"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        artefact_folders = sorted(
+            [d for d in photo_folder.iterdir() if d.is_dir()]
+        )
+        if not artefact_folders:
+            typer.echo(f"No sub-folders found in {photo_folder}")
+            raise typer.Exit()
+
+        typer.echo(f"Found {len(artefact_folders)} artefacts for batch processing")
+
+        for artefact_dir in artefact_folders:
+            label_used = artefact_dir.name
+            out_path = output_dir / label_used / f"{label_used}.ply"
+            typer.echo(f"\nProcessing {label_used} ({artefact_dir})...")
+
+            cfg = PhotogrammetryConfig(
+                photo_folder=artefact_dir,
+                output_path=out_path,
+                artefact_label=label_used,
+                quality=quality,
+                mode="default",
+            )
+
+            def cli_progress(stage: str, progress: float, message: str) -> None:
+                if progress == 0.0:
+                    typer.echo(f"  {stage}...")
+                elif progress == 1.0:
+                    typer.echo(f"  \u2713 {stage}")
+
+            try:
+                result = run_pipeline(cfg, progress_cb=cli_progress)
+                typer.echo(f"  \u2713 Complete: {result.face_count} faces in {result.processing_time_s:.0f}s")
+            except Exception as exc:
+                typer.echo(f"  \u2717 Failed: {exc}", err=True)
+
+        typer.echo(f"\nBatch complete. Results in {output_dir}")
+    else:
+        mode = "expert" if any([
+            colmap_feature_type != "sift",
+            colmap_matching != "exhaustive",
+            dense_quality != "extreme",
+        ]) else "default"
+
+        cfg = PhotogrammetryConfig(
+            photo_folder=photo_folder,
+            output_path=output,
+            artefact_label=label or photo_folder.stem,
+            quality=quality,
+            mode=mode,
+            colmap_feature_type=colmap_feature_type,
+            colmap_matching_strategy=colmap_matching,
+            colmap_dense_quality=dense_quality,
+        )
+
+        def cli_progress(stage: str, progress: float, message: str) -> None:
+            if progress == 0.0:
+                typer.echo(f"\u23f3 {stage}...")
+            elif progress == 1.0:
+                typer.echo(f"\u2705 {stage}")
+
+        try:
+            result = run_pipeline(cfg, progress_cb=cli_progress)
+            typer.echo(f"\n\u2705 Photogrammetry complete!")
+            typer.echo(f"   Artefact: {result.artefact_label}")
+            typer.echo(f"   Photos:   {result.camera_count}")
+            typer.echo(f"   Faces:    {result.face_count}")
+            typer.echo(f"   Time:     {result.processing_time_s:.0f}s")
+            typer.echo(f"   Output:   {result.mesh_path}")
+            if result.warnings:
+                for w in result.warnings:
+                    typer.echo(f"   \u26a0 {w}")
+        except Exception as exc:
+            typer.echo(f"\u274c Photogrammetry failed: {exc}", err=True)
+            raise typer.Exit(code=1) from exc
 
 
 if __name__ == "__main__":

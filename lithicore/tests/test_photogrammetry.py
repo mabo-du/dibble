@@ -8,6 +8,7 @@ rules:   COLMAP integration tests are marked @pytest.mark.skipif(colmap_missing)
          Unit tests should never require COLMAP.
 agent:   deepseek-v4-flash | 2026-05-26 | Initial test skeleton
 agent:   deepseek-v4-flash | 2026-05-26 | Added TestColmapCheck + TestCleanPointCloud with synthetic data
+agent:   deepseek-v4-flash | 2026-05-26 | Added TestPhotogrammetryCLI
 """
 
 from pathlib import Path
@@ -318,3 +319,22 @@ class TestPipelineOrchestration:
             _run_colmap_stage("mapper", [], None, tmp_path)
         assert "mapper" in str(exc.value)
         assert "something broke" in str(exc.value)
+
+
+class TestPhotogrammetryCLI:
+    """CLI subcommand for photogrammetry."""
+
+    def test_photogrammetry_command_registered(self):
+        """The 'photogrammetry' subcommand should exist on the typer app."""
+        from lithicore._cli import app
+        names = [c.callback.__name__ for c in app.registered_commands]
+        assert "photogrammetry" in names
+
+    def test_photogrammetry_cli_help_outputs(self):
+        """Running --help on the subcommand should not crash."""
+        from typer.testing import CliRunner
+        from lithicore._cli import app
+        runner = CliRunner()
+        result = runner.invoke(app, ["photogrammetry", "--help"])
+        assert result.exit_code == 0
+        assert "Photogrammetry" in result.stdout or "photogrammetry" in result.stdout.lower()
