@@ -7,9 +7,11 @@ used_by: pytest
 rules:   COLMAP integration tests are marked @pytest.mark.skipif(colmap_missing).
          Unit tests should never require COLMAP.
 agent:   deepseek-v4-flash | 2026-05-26 | Initial test skeleton
+agent:   deepseek-v4-flash | 2026-05-26 | Added TestColmapCheck + TestCleanPointCloud with synthetic data
 """
 
 from pathlib import Path
+import numpy as np
 import pytest
 
 from lithicore._photogrammetry import (
@@ -126,3 +128,51 @@ class TestPhotogrammetryResult:
         )
         assert result.sparse_cloud_path is None
         assert result.dense_cloud_path is None
+
+
+class TestColmapCheck:
+    """COLMAP availability detection."""
+
+    def test_colmap_available_returns_bool(self):
+        from lithicore._photogrammetry import colmap_available
+        result = colmap_available()
+        # Should return True or False, never raise
+        assert isinstance(result, bool)
+
+
+class TestCleanPointCloud:
+    """Point cloud cleaning functions with synthetic data."""
+
+    @pytest.fixture
+    def clean_cloud(self):
+        """A dense cloud of points around origin (the artefact)."""
+        rng = np.random.default_rng(42)
+        points = rng.normal(0, 5, size=(1000, 3))
+        return points
+
+    @pytest.fixture
+    def noisy_cloud(self, clean_cloud):
+        """Same as clean_cloud but with distant outlier points."""
+        rng = np.random.default_rng(99)
+        outliers = rng.uniform(-100, 100, size=(50, 3))
+        return np.vstack([clean_cloud, outliers])
+
+    def test_removes_statistical_outliers(self, noisy_cloud):
+        from lithicore._photogrammetry import clean_point_cloud
+        cleaned = clean_point_cloud(noisy_cloud, threshold=2.0)
+        assert len(cleaned) < len(noisy_cloud)
+        # The main cluster (~1000 points) should be preserved
+        assert len(cleaned) >= 950
+
+    def test_preserves_clean_cloud(self, clean_cloud):
+        from lithicore._photogrammetry import clean_point_cloud
+        cleaned = clean_point_cloud(clean_cloud, threshold=2.0)
+        # No outliers = no removal
+        assert len(cleaned) == len(clean_cloud)
+
+    def test_crop_background_removes_distant_points(self, noisy_cloud):
+        from lithicore._photogrammetry import clean_point_cloud, _crop_background
+        cropped = _crop_background(noisy_cloud, margin=1.5)
+        # Distant outliers removed
+        assert len(cropped) < len(noisy_cloud)
+        assert len(cropped) >= 950
