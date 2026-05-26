@@ -2,8 +2,6 @@
 
 **Digital Image-Based Benchmark for Lithic Evaluation**
 
-*Named for Harold Dibble (1951–2018) — pioneering lithic technologist, open-source advocate, and father of Flint Dibble.*
-
 Dibble is a desktop application for automated 3D lithic (stone tool) morphological analysis. Import a 3D mesh, and Dibble orients it, extracts standardised measurements, generates publication-ready figures, detects flake scars, and places 3D landmarks — no coding required.
 
 ---
@@ -107,3 +105,5 @@ v1 and v2 features are complete. v3 (photogrammetry) is released. Active develop
 ---
 
 *Built for the archaeological community. Open source under the MIT license.*
+
+*Named for Harold Dibble (1951–2018) — pioneering lithic technologist, open-source advocate.*
