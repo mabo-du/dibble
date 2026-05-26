@@ -46,6 +46,8 @@ try:
         PhotogrammetryCancelledError,
         run_pipeline,
         colmap_available,
+        clean_point_cloud,
+        ProgressCallback,
     )
 
     __all__ = [
@@ -59,7 +61,8 @@ try:
         "PhotogrammetryConfig", "PhotogrammetryResult",
         "PhotogrammetryError", "ColmapNotFoundError", "ColmapStageError",
         "InsufficientPhotosError", "PhotogrammetryCancelledError",
-        "run_pipeline", "colmap_available",
+        "run_pipeline", "colmap_available", "clean_point_cloud",
+        "ProgressCallback",
     ]
 except ImportError as _exc:
     # Forward reference — all modules exist since Phases 2-4

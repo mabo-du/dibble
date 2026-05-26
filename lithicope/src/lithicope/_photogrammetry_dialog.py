@@ -397,6 +397,12 @@ class PhotogrammetryDialog(QDialog):
         self._cancel_pipeline_btn.setEnabled(False)
         self._cancel_pipeline_btn.setText("Cancelling...")
 
+    def closeEvent(self, event) -> None:  # type: ignore
+        if self._worker and self._worker.isRunning():
+            self._worker.cancel()
+            self._worker.wait(3000)
+        super().closeEvent(event)
+
     def _open_in_viewer(self) -> None:
         if self._result:
             from lithicore._models import MeasurementConfig

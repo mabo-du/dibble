@@ -2,9 +2,11 @@
 
 exports: BatchPhotogrammetryDialog(QDialog)
 used_by: MainWindow -> File -> New Batch Photogrammetry
-rules:   Sequential processing. Each artefact = one sub-folder.
-         Results saved to output_folder/<label>/<label>.ply.
+rules:   Sequential processing via PhotogrammetryWorker (non-blocking QThread).
+         Each artefact = one sub-folder. Results saved to output_folder/<label>/<label>.ply.
 agent:   deepseek-v4-flash | 2026-05-26 | Initial implementation
+         deepseek-v4-flash | 2026-05-26 | Fixed: replaced blocking QTimer with QThread worker
+agent:   deepseek-v4-flash | 2026-05-26 | Fixed: use QThread worker, not blocking QTimer
 """
 
 from __future__ import annotations
@@ -12,7 +14,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QComboBox,
     QDialog,
@@ -28,8 +30,8 @@ from PyQt6.QtWidgets import (
 
 from lithicore._photogrammetry import (
     PhotogrammetryConfig,
-    run_pipeline,
 )
+from lithicope._photogrammetry_dialog import PhotogrammetryWorker
 
 
 class BatchPhotogrammetryDialog(QDialog):
@@ -108,7 +110,7 @@ class BatchPhotogrammetryDialog(QDialog):
                 continue
             photos = [
                 p for p in child.iterdir()
-                if p.suffix.lower() in {".jpg", ".jpeg", ".png"}
+                if p.suffix.lower() in {".jpg", ".jpeg", ".png", ".tiff", ".tif"}
             ]
             if len(photos) >= 3:
                 self._artefacts.append({
@@ -124,7 +126,7 @@ class BatchPhotogrammetryDialog(QDialog):
         if not dir_str:
             return
         path = Path(dir_str)
-        photos = [p for p in path.iterdir() if p.suffix.lower() in {".jpg", ".jpeg", ".png"}]
+        photos = [p for p in path.iterdir() if p.suffix.lower() in {".jpg", ".jpeg", ".png", ".tiff", ".tif"}]
         if len(photos) >= 3:
             self._artefacts.append({
                 "path": path,
@@ -187,17 +189,22 @@ class BatchPhotogrammetryDialog(QDialog):
             quality=quality,
             mode="default",
         )
-        self._current_config = config
-        QTimer.singleShot(100, self._run_current)
 
-    def _run_current(self) -> None:
-        try:
-            run_pipeline(self._current_config)
-            self._artefacts[self._current_index]["status"] = self.STATUS_COMPLETE
-        except Exception as exc:
-            self._artefacts[self._current_index]["status"] = f"Failed: {str(exc)[:50]}"
+        # Use PhotogrammetryWorker (QThread) so the UI stays responsive
+        self._current_worker = PhotogrammetryWorker(config)
+        self._current_worker.finished.connect(self._on_artefact_done)
+        self._current_worker.error.connect(self._on_artefact_error)
+        self._current_worker.start()
+
+    def _on_artefact_done(self, result: object) -> None:
+        self._artefacts[self._current_index]["status"] = self.STATUS_COMPLETE
         self._refresh_table()
-        QTimer.singleShot(200, self._process_next)
+        self._process_next()
+
+    def _on_artefact_error(self, error_msg: str) -> None:
+        self._artefacts[self._current_index]["status"] = f"Failed: {error_msg[:50]}"
+        self._refresh_table()
+        self._process_next()
 
     def closeEvent(self, event) -> None:  # type: ignore
         self._cancelled = True
