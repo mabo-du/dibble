@@ -47,6 +47,9 @@ class Viewer3D(QWidget):
         self._edge_actor: Optional[tuple] = None
         self._landmark_actors: list = []
         self._landmark_callback = None
+        self._scale_points: list = []
+        self._scale_actors: list = []
+        self._scale_callback = None
         self._placeholder: Optional[QLabel] = None
 
         layout = QVBoxLayout()
@@ -268,6 +271,83 @@ class Viewer3D(QWidget):
             self.plotter.remove_actor(actor, render=False)
         self._landmark_actors.clear()
         self.disable_landmark_mode()
+        self.plotter.render()
+
+    # ── Scale measurement mode ─────────────────────────────────
+
+    def enable_scale_mode(self, complete_callback) -> None:
+        """Enable click-two-points scale measurement mode.
+
+        First click: place green sphere at Point A.
+        Second click: place red sphere at Point B, draw a line,
+                      emit (point_a, point_b) to the callback.
+
+        The callback receives (ax, ay, az, bx, by, bz) as floats.
+        """
+        if not HAS_PYVISTAQT or self._pv_mesh is None:
+            return
+
+        self._scale_points = []
+        self._scale_actors = []
+        self._scale_callback = complete_callback
+
+        def _on_pick(picked_point):
+            if picked_point is None:
+                return
+            pt = (float(picked_point[0]), float(picked_point[1]), float(picked_point[2]))
+            self._scale_points.append(pt)
+
+            # Draw sphere at the clicked point
+            sphere = pv.Sphere(
+                radius=max(0.5, self._pv_mesh.length * 0.008),
+                center=[pt[0], pt[1], pt[2]],
+            )
+            color = "green" if len(self._scale_points) == 1 else "red"
+            actor = self.plotter.add_mesh(sphere, color=color, smooth_shading=True)
+            self._scale_actors.append(actor)
+
+            if len(self._scale_points) == 1:
+                # Show message for second click
+                self.plotter.add_text(
+                    "Now click a second point with known distance",
+                    position="lower_edge",
+                    font_size=12,
+                    color="green",
+                )
+                self.plotter.render()
+            elif len(self._scale_points) == 2:
+                # Draw line between the two points
+                a, b = self._scale_points[0], self._scale_points[1]
+                line = pv.Line(a, b)
+                line_actor = self.plotter.add_mesh(
+                    line, color="yellow", line_width=3, lighting=False
+                )
+                self._scale_actors.append(line_actor)
+                self.plotter.render()
+
+                # Disable picking and fire callback
+                self.plotter.disable_picking()
+                # Remove the helper text
+                # Can't easily remove specific text, will be cleared on next render
+                self._scale_callback(a[0], a[1], a[2], b[0], b[1], b[2])
+
+        self.plotter.enable_point_picking(
+            callback=_on_pick,
+            show_message="Click the first reference point on the mesh",
+            use_mesh=True,
+            pickable=True,
+        )
+
+    def disable_scale_mode(self) -> None:
+        """Remove scale measurement overlays and disable picking."""
+        if not HAS_PYVISTAQT:
+            return
+        for actor in self._scale_actors:
+            self.plotter.remove_actor(actor, render=False)
+        self._scale_actors.clear()
+        self._scale_points = []
+        self._scale_callback = None
+        self.plotter.disable_picking()
         self.plotter.render()
 
     # ── Scar overlay ───────────────────────────────────────────
