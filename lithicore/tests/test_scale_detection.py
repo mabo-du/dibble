@@ -2,11 +2,13 @@
 
 exports: TestScaleResult
          TestApplyScale
+         TestDetectScaleRuler
 used_by: pytest
 rules:   No COLMAP dependency required for unit tests.
          Synthetic data only.
 agent:   deepseek-v4-flash | 2026-05-27 | Initial test skeleton
 agent:   deepseek-v4-flash | 2026-05-27 | Added ArUco marker detection tests
+agent:   deepseek-v4-flash | 2026-05-27 | Added ruler/scale bar detection tests
 """
 
 from pathlib import Path
@@ -123,5 +125,47 @@ class TestDetectScaleArUco:
         result = detect_scale_aruco(tmp_path, tmp_path)
         assert result is not None
         assert result.method == "aruco"
+        assert result.confidence == 0.0
+        assert any("OpenCV" in w for w in result.warnings)
+
+
+class TestDetectScaleRuler:
+    """Ruler/scale bar detection with synthetic images."""
+
+    def test_ruler_no_photos_returns_none(self, tmp_path):
+        from lithicore._scale_detection import detect_scale_ruler
+        empty_dir = tmp_path / "empty"
+        empty_dir.mkdir()
+        result = detect_scale_ruler(empty_dir, None)
+        assert result is None
+
+    def test_ruler_blank_image_returns_none(self, tmp_path):
+        from lithicore._scale_detection import detect_scale_ruler
+        import cv2
+        import numpy as np
+        photo_dir = tmp_path / "photos"
+        photo_dir.mkdir()
+        blank = np.ones((480, 640), dtype=np.uint8) * 200
+        cv2.imwrite(str(photo_dir / "img_001.jpg"), blank)
+        result = detect_scale_ruler(photo_dir, None)
+        assert result is None
+
+    def test_ruler_opencv_missing_returns_warning(self, tmp_path, monkeypatch):
+        """If OpenCV is not installed, should return ScaleResult with warning."""
+        import builtins
+        real_import = builtins.__import__
+
+        def mock_import(name, *args, **kwargs):
+            if name == "cv2":
+                raise ImportError("No module named cv2")
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", mock_import)
+
+        from lithicore._scale_detection import detect_scale_ruler, ScaleResult
+        from pathlib import Path
+        result = detect_scale_ruler(tmp_path, tmp_path)
+        assert result is not None
+        assert result.method == "ruler"
         assert result.confidence == 0.0
         assert any("OpenCV" in w for w in result.warnings)
