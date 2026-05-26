@@ -106,10 +106,147 @@ def _export_view_svg(plotter, cam_pos, cam_focal, cam_up, view_size=(800, 600)) 
     return svg_content
 
 
+def _compute_measurement_callouts(mesh: trimesh.Trimesh) -> dict:
+    """Compute measurement callout data from an oriented mesh.
+
+    Returns dict with keys for each view containing list of callout dicts:
+      {view_name: [
+        {"type": "length", "x1": ..., "y1": ..., "x2": ..., "y2": ...,
+         "label": "...", "value": ...},
+      ]}
+    """
+    vertices = np.asarray(mesh.vertices, dtype=float)
+    bounds = mesh.bounds  # [[xmin, ymin, zmin], [xmax, ymax, zmax]]
+    centre = np.mean(vertices, axis=0)
+    ext = bounds[1] - bounds[0]
+
+    callouts: dict = {"plan": [], "profile": [], "section": []}
+
+    # Max length (along Z in oriented space) — shown in profile view
+    length_val = ext[2]
+    callouts["profile"].append({
+        "type": "length",
+        "x1": centre[0], "y1": bounds[0, 2],   # bottom
+        "x2": centre[0], "y2": bounds[1, 2],   # top
+        "label": f"L = {length_val:.1f} mm",
+        "offset_x": 30,
+    })
+
+    # Max width (along X) — shown in plan view
+    width_val = ext[0]
+    callouts["plan"].append({
+        "type": "width",
+        "x1": bounds[0, 0], "y1": centre[1],
+        "x2": bounds[1, 0], "y2": centre[1],
+        "label": f"W = {width_val:.1f} mm",
+        "offset_y": -15,
+    })
+
+    # Thickness (along Y) — shown in section view
+    thick_val = ext[1]
+    callouts["section"].append({
+        "type": "thickness",
+        "x1": centre[0], "y1": bounds[0, 1],
+        "x2": centre[0], "y2": bounds[1, 1],
+        "label": f"T = {thick_val:.1f} mm",
+        "offset_x": 30,
+    })
+
+    return callouts
+
+
+def _project_to_svg_coords(
+    x: float, y: float, view_name: str,
+    mesh_centre, mesh_extent, view_width: int, view_height: int,
+) -> tuple[float, float]:
+    """Project 3D mesh coordinates to 2D SVG viewport coordinates.
+
+    The mesh occupies roughly the central 70% of the viewport,
+    scaled to fit with aspect ratio preserved.
+    """
+    scale = min(view_width * 0.7, view_height * 0.7) / max(mesh_extent, 1e-6)
+    cx, cy = view_width / 2, view_height / 2
+
+    if view_name == "plan":
+        sx, sy = (x - mesh_centre[0]) * scale + cx, (y - mesh_centre[1]) * scale + cy
+    elif view_name == "profile":
+        sx, sy = (x - mesh_centre[0]) * scale + cx, (y - mesh_centre[2]) * scale + cy
+    elif view_name == "section":
+        sx, sy = (x - mesh_centre[0]) * scale + cx, (y - mesh_centre[1]) * scale + cy
+    else:
+        sx, sy = x, y
+    return sx, sy
+
+
+def _add_callout_to_svg(
+    svg_lines: list,
+    callout: dict,
+    view_name: str,
+    view_x: float, view_y: float,
+    mesh_centre, mesh_extent,
+    view_width: int = 600, view_height: int = 450,
+) -> None:
+    """Add measurement callout SVG elements (leader lines + label)."""
+    if view_name not in ["plan", "profile", "section"]:
+        return
+
+    # Project endpoints to SVG coords
+    x1, y1 = _project_to_svg_coords(
+        callout["x1"], callout["y1"], view_name,
+        mesh_centre, mesh_extent, view_width, view_height,
+    )
+    x2, y2 = _project_to_svg_coords(
+        callout["x2"], callout["y2"], view_name,
+        mesh_centre, mesh_extent, view_width, view_height,
+    )
+
+    # Absolute position in the full plate
+    ax1, ay1 = x1 + view_x, y1 + view_y
+    ax2, ay2 = x2 + view_x, y2 + view_y
+
+    # Draw dimension line with arrows
+    offset = callout.get("offset_x", 0)
+    offset_y = callout.get("offset_y", 0)
+    lx = max(ax1, ax2) + offset + 10
+    ly = (ay1 + ay2) / 2 + offset_y
+
+    # Leader lines from endpoints to label
+    svg_lines.append(
+        f'    <line x1="{ax1}" y1="{ay1}" x2="{lx}" y2="{ly}" '
+        f'stroke="#555" stroke-width="0.5" stroke-dasharray="3,2"/>'
+    )
+    svg_lines.append(
+        f'    <line x1="{ax2}" y1="{ay2}" x2="{lx}" y2="{ly}" '
+        f'stroke="#555" stroke-width="0.5" stroke-dasharray="3,2"/>'
+    )
+    # Measurement line
+    svg_lines.append(
+        f'    <line x1="{lx - 8}" y1="{ly}" x2="{lx + 70}" y2="{ly}" '
+        f'stroke="#333" stroke-width="0.8"/>'
+    )
+    # Tick marks
+    svg_lines.append(
+        f'    <line x1="{lx - 8}" y1="{ly - 3}" x2="{lx - 8}" y2="{ly + 3}" '
+        f'stroke="#333" stroke-width="0.8"/>'
+    )
+    svg_lines.append(
+        f'    <line x1="{lx + 70}" y1="{ly - 3}" x2="{lx + 70}" y2="{ly + 3}" '
+        f'stroke="#333" stroke-width="0.8"/>'
+    )
+    # Label
+    svg_lines.append(
+        f'    <text x="{lx + 5}" y="{ly + 3}" font-size="8" '
+        f'fill="#333" font-family="sans-serif">{callout["label"]}</text>'
+    )
+
+
 def _compose_figure_svg(
     view_svgs: dict[str, str],
     config: FigureConfig,
     max_extent_mm: float,
+    callouts: dict | None = None,
+    mesh_centre=None,
+    mesh_extent: float = 1.0,
 ) -> str:
     """Compose individual view SVGs into a single publication plate SVG."""
     view_width = 600
@@ -151,6 +288,15 @@ def _compose_figure_svg(
         svg_lines.append('  </g>')
         label = view_name.capitalize()
         svg_lines.append(f'  <text x="{x + 10}" y="{y - 8}" class="label">{label}</text>')
+
+        # Add measurement callouts
+        if config.show_measurements and callouts and view_name in callouts:
+            view_centre = mesh_centre if mesh_centre is not None else [0, 0, 0]
+            for c in callouts.get(view_name, []):
+                _add_callout_to_svg(
+                    svg_lines, c, view_name, x, y,
+                    view_centre, mesh_extent,
+                )
 
     scale_mm, scale_label = _nice_scale(max_extent_mm)
     scale_bar_y = margin + 2 * view_height + 2 * margin + 20
@@ -195,7 +341,13 @@ def generate_figure(
         if svg:
             view_svgs[view_name] = svg
 
-    return _compose_figure_svg(view_svgs, config, extent)
+    # Compute measurement callouts
+    callouts = _compute_measurement_callouts(mesh) if config.show_measurements else None
+
+    return _compose_figure_svg(
+        view_svgs, config, extent,
+        callouts=callouts, mesh_centre=centre, mesh_extent=extent,
+    )
 
 
 def figure_cli(
