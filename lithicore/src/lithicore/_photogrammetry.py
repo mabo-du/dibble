@@ -246,6 +246,7 @@ class PhotogrammetryConfig:
     colmap_meshing: str = "poisson"
     colmap_dense_quality: str = "extreme"
     max_vertices: int = 500000
+    use_gpu: bool = False               # Enable CUDA GPU acceleration
 
     # Internal
     colmap_workspace: Optional[Path] = None
@@ -405,17 +406,15 @@ def run_pipeline(
 
     try:
         # Stage 2: Feature extraction
-        stdout = _run_colmap_stage(
-            "feature_extraction",
-            [
-                "feature_extractor",
-                "--database_path", str(database_path),
-                "--image_path", str(photo_dir),
-                "--ImageReader.camera_model", "SIMPLE_RADIAL",
-            ],
-            progress_cb,
-            workspace,
-        )
+        feat_args = [
+            "feature_extractor",
+            "--database_path", str(database_path),
+            "--image_path", str(photo_dir),
+            "--ImageReader.camera_model", "SIMPLE_RADIAL",
+        ]
+        if config.use_gpu:
+            feat_args += ["--SiftExtraction.use_gpu", "1"]
+        stdout = _run_colmap_stage("feature_extraction", feat_args, progress_cb, workspace)
         colmap_stdout_parts.append(f"=== feature_extractor ===\n{stdout}")
 
         # Stage 3: Feature matching
@@ -425,12 +424,11 @@ def run_pipeline(
         elif config.colmap_matching_strategy == "vocab_tree":
             match_cmd = "vocab_tree_matcher"
 
-        stdout = _run_colmap_stage(
-            "feature_matching",
-            [match_cmd, "--database_path", str(database_path)],
-            progress_cb,
-            workspace,
-        )
+        match_args = [match_cmd, "--database_path", str(database_path)]
+        if config.use_gpu:
+            # COLMAP GPU matching flags vary by version
+            match_args += ["--SiftMatching.use_gpu", "1"]
+        stdout = _run_colmap_stage("feature_matching", match_args, progress_cb, workspace)
         colmap_stdout_parts.append(f"=== {match_cmd} ===\n{stdout}")
 
         # Stage 4: Sparse reconstruction
