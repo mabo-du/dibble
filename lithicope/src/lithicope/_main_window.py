@@ -28,6 +28,8 @@ from lithicope._viewer_3d import Viewer3D
 from lithicope._import_dialog import ImportDialog
 from lithicope._results_panel import ResultsPanel
 from lithicope._batch_runner import BatchRunner
+from lithicope._photogrammetry_dialog import PhotogrammetryDialog
+from lithicope._batch_photogrammetry import BatchPhotogrammetryDialog
 
 
 class MainWindow(QMainWindow):
@@ -98,6 +100,18 @@ class MainWindow(QMainWindow):
         batch_action.triggered.connect(self._on_batch)
         file_menu.addAction(batch_action)
 
+        # New from Photos (Default photogrammetry)
+        photos_action = QAction("&New from Photos...", self)
+        photos_action.setShortcut("Ctrl+P")
+        photos_action.triggered.connect(self._on_new_from_photos)
+        file_menu.addAction(photos_action)
+
+        # New Batch Photogrammetry
+        batch_photo_action = QAction("&New Batch Photogrammetry...", self)
+        batch_photo_action.setShortcut("Ctrl+Shift+P")
+        batch_photo_action.triggered.connect(self._on_batch_photogrammetry)
+        file_menu.addAction(batch_photo_action)
+
         file_menu.addSeparator()
 
         exit_action = QAction("E&xit", self)
@@ -117,8 +131,18 @@ class MainWindow(QMainWindow):
         fig_action.triggered.connect(self._on_publication_figure)
         tools_menu.addAction(fig_action)
 
-        # Comparison mode
+        # Photogrammetry submenu
         tools_menu.addSeparator()
+        photo_submenu = tools_menu.addMenu("&Photogrammetry")
+        guided_action = QAction("&Guided...", self)
+        guided_action.triggered.connect(self._on_photogrammetry_guided)
+        photo_submenu.addAction(guided_action)
+        expert_action = QAction("&Expert...", self)
+        expert_action.triggered.connect(self._on_photogrammetry_expert)
+        photo_submenu.addAction(expert_action)
+        tools_menu.addSeparator()
+
+        # Comparison mode
         compare_action = QAction("&Compare with Another Mesh...", self)
         compare_action.setShortcut("Ctrl+D")
         compare_action.triggered.connect(self._on_compare)
@@ -192,6 +216,89 @@ class MainWindow(QMainWindow):
         if dialog.exec() == ImportDialog.DialogCode.Accepted:
             config = dialog.get_config()
             self._run_batch(directory, config)
+
+    def _on_new_from_photos(self) -> None:
+        """Default mode photogrammetry: pick a folder, run pipeline."""
+        dir_str = QFileDialog.getExistingDirectory(self, "Select Photo Folder")
+        if not dir_str:
+            return
+        photo_folder = Path(dir_str)
+        default_label = photo_folder.stem
+
+        out_str, _ = QFileDialog.getSaveFileName(
+            self, "Save Mesh As",
+            str(photo_folder / f"{default_label}.ply"),
+            "PLY Mesh (*.ply);;OBJ Mesh (*.obj);;STL Mesh (*.stl)",
+        )
+        if not out_str:
+            return
+
+        dialog = PhotogrammetryDialog(
+            self,
+            mode="default",
+            photo_folder=photo_folder,
+            output_path=Path(out_str),
+            artefact_label=default_label,
+        )
+        dialog.exec()
+
+    def _on_batch_photogrammetry(self) -> None:
+        """Open the batch photogrammetry dialog."""
+        dir_str = QFileDialog.getExistingDirectory(self, "Select Artefacts Folder")
+        if not dir_str:
+            return
+        dialog = BatchPhotogrammetryDialog(Path(dir_str), self)
+        dialog.exec()
+
+    def _on_photogrammetry_guided(self) -> None:
+        """Open photogrammetry dialog in guided mode."""
+        dir_str = QFileDialog.getExistingDirectory(self, "Select Photo Folder")
+        if not dir_str:
+            return
+        photo_folder = Path(dir_str)
+        default_label = photo_folder.stem
+
+        out_str, _ = QFileDialog.getSaveFileName(
+            self, "Save Mesh As",
+            str(photo_folder / f"{default_label}.ply"),
+            "PLY Mesh (*.ply);;OBJ Mesh (*.obj);;STL Mesh (*.stl)",
+        )
+        if not out_str:
+            return
+
+        dialog = PhotogrammetryDialog(
+            self,
+            mode="guided",
+            photo_folder=photo_folder,
+            output_path=Path(out_str),
+            artefact_label=default_label,
+        )
+        dialog.exec()
+
+    def _on_photogrammetry_expert(self) -> None:
+        """Open photogrammetry dialog in expert mode."""
+        dir_str = QFileDialog.getExistingDirectory(self, "Select Photo Folder")
+        if not dir_str:
+            return
+        photo_folder = Path(dir_str)
+        default_label = photo_folder.stem
+
+        out_str, _ = QFileDialog.getSaveFileName(
+            self, "Save Mesh As",
+            str(photo_folder / f"{default_label}.ply"),
+            "PLY Mesh (*.ply);;OBJ Mesh (*.obj);;STL Mesh (*.stl)",
+        )
+        if not out_str:
+            return
+
+        dialog = PhotogrammetryDialog(
+            self,
+            mode="expert",
+            photo_folder=photo_folder,
+            output_path=Path(out_str),
+            artefact_label=default_label,
+        )
+        dialog.exec()
 
     def _on_export(self, fmt: str = "csv") -> None:
         """Export current results."""
