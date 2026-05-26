@@ -200,8 +200,121 @@ class TestCleanPointCloud:
         assert len(result) == 50  # All kept, no statistical variance
 
     def test_degenerate_crop_identical_points(self):
-        """Crop with all-identical points should not crash (zero covariance)."""
         from lithicore._photogrammetry import _crop_background
         points = np.ones((50, 3))
         result = _crop_background(points, margin=1.5)
         assert len(result) == 50  # All kept
+
+
+class TestPipelineOrchestration:
+    """run_pipeline orchestration with mocked subprocess."""
+
+    def test_validate_inputs_ok(self, tmp_path):
+        from lithicore._photogrammetry import _validate_inputs, PhotogrammetryConfig
+        photo_dir = tmp_path / "photos"
+        photo_dir.mkdir()
+        for i in range(5):
+            (photo_dir / f"img_{i:03d}.jpg").write_text("fake-image-data")
+        config = PhotogrammetryConfig(
+            photo_folder=photo_dir,
+            output_path=tmp_path / "result.ply",
+        )
+        result = _validate_inputs(config)
+        assert result == 5
+
+    def test_validate_inputs_too_few(self, tmp_path):
+        from lithicore._photogrammetry import _validate_inputs, InsufficientPhotosError, PhotogrammetryConfig
+        photo_dir = tmp_path / "photos"
+        photo_dir.mkdir()
+        (photo_dir / "img_001.jpg").write_text("fake")
+        (photo_dir / "img_002.jpg").write_text("fake")
+        config = PhotogrammetryConfig(
+            photo_folder=photo_dir,
+            output_path=tmp_path / "result.ply",
+        )
+        with pytest.raises(InsufficientPhotosError):
+            _validate_inputs(config)
+
+    def test_validate_inputs_no_photos(self, tmp_path):
+        from lithicore._photogrammetry import _validate_inputs, InsufficientPhotosError, PhotogrammetryConfig
+        photo_dir = tmp_path / "photos"
+        photo_dir.mkdir()
+        config = PhotogrammetryConfig(
+            photo_folder=photo_dir,
+            output_path=tmp_path / "result.ply",
+        )
+        with pytest.raises(InsufficientPhotosError):
+            _validate_inputs(config)
+
+    def test_validate_inputs_invalid_ext(self, tmp_path):
+        from lithicore._photogrammetry import _validate_inputs, PhotogrammetryConfig
+        photo_dir = tmp_path / "photos"
+        photo_dir.mkdir()
+        # 5 valid files
+        for i in range(3):
+            (photo_dir / f"img_{i:03d}.jpg").write_text("fake")
+        (photo_dir / "img_003.png").write_text("fake")
+        (photo_dir / "img_004.jpeg").write_text("fake")
+        # 2 invalid extensions (should be filtered out)
+        (photo_dir / "img_005.gif").write_text("fake")
+        (photo_dir / "img_006.txt").write_text("fake")
+        config = PhotogrammetryConfig(
+            photo_folder=photo_dir,
+            output_path=tmp_path / "result.ply",
+        )
+        result = _validate_inputs(config)
+        # 5 valid files counted (3 jpg + 1 png + 1 jpeg); 2 invalid filtered
+        assert result == 5
+
+    def test_run_colmap_stage_calls_subprocess(self, tmp_path, monkeypatch):
+        from lithicore._photogrammetry import _run_colmap_stage, ColmapStageError, colmap_available
+        import subprocess
+
+        # COLMAP is not installed — mock both the availability check and subprocess
+        monkeypatch.setattr("lithicore._photogrammetry.colmap_available", lambda: True)
+
+        calls = []
+
+        class MockProc:
+            returncode = 0
+            stdout = "All done."
+            stderr = ""
+
+        def mock_run(*args, **kwargs):
+            calls.append(args)
+            return MockProc()
+
+        monkeypatch.setattr(subprocess, "run", mock_run)
+
+        progress_log = []
+
+        def progress_cb(stage, pct, msg):
+            progress_log.append((stage, pct, msg))
+
+        result = _run_colmap_stage(
+            "feature_extractor",
+            ["--flag", "value"],
+            progress_cb,
+            tmp_path,
+        )
+        assert result == "All done."
+        assert len(calls) == 1
+        assert "colmap" in calls[0][0]
+
+    def test_run_colmap_stage_failure_raises(self, tmp_path, monkeypatch):
+        from lithicore._photogrammetry import _run_colmap_stage, ColmapStageError, colmap_available
+        import subprocess
+
+        monkeypatch.setattr("lithicore._photogrammetry.colmap_available", lambda: True)
+
+        class MockProc:
+            returncode = 1
+            stdout = ""
+            stderr = "Error: something broke"
+
+        monkeypatch.setattr(subprocess, "run", lambda *a, **kw: MockProc())
+
+        with pytest.raises(ColmapStageError) as exc:
+            _run_colmap_stage("mapper", [], None, tmp_path)
+        assert "mapper" in str(exc.value)
+        assert "something broke" in str(exc.value)
