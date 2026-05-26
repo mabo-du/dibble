@@ -6,6 +6,8 @@ rules:   Single-window layout: 3D viewer (60%) left, measurements panel (40%) ri
          Menu bar: File, Edit, Tools, Help.
          Status bar shows current artefact and batch progress.
 agent:   deepseek-v4-flash | 2026-05-26 | Initial implementation
+agent:   deepseek-v4-flash | 2026-05-26 | Added Publication Figure menu item and _on_publication_figure handler
+         message: "imports lithicore._figure inside method — lazy import to avoid startup dependency"
 """
 
 from __future__ import annotations
@@ -87,6 +89,11 @@ class MainWindow(QMainWindow):
         export_action.setShortcut("Ctrl+E")
         export_action.triggered.connect(lambda: self._on_export("csv"))
         tools_menu.addAction(export_action)
+
+        # Publication figure
+        fig_action = QAction("&Publication Figure...", self)
+        fig_action.triggered.connect(self._on_publication_figure)
+        tools_menu.addAction(fig_action)
 
         # Help menu
         help_menu = menu.addMenu("&Help")
@@ -184,3 +191,30 @@ class MainWindow(QMainWindow):
             "3D lithic artefact measurement and analysis.\n\n"
             "Built with lithicore + PyQt6 + Open3D",
         )
+
+    def _on_publication_figure(self) -> None:
+        """Export a publication figure from the current mesh."""
+        if self._current_mesh_path is None:
+            QMessageBox.information(self, "No Mesh", "Load a mesh first.")
+            return
+
+        path_str, _ = QFileDialog.getSaveFileName(
+            self, "Save Publication Figure", "figure.svg",
+            "SVG Files (*.svg);;PDF Files (*.pdf)",
+        )
+        if not path_str:
+            return
+        path = Path(path_str)
+
+        from lithicore._figure import FigureConfig, generate_figure
+
+        config = FigureConfig(
+            artefact_label=self._current_mesh_path.stem,
+        )
+
+        try:
+            svg = generate_figure(self.viewer._mesh, self.viewer.plotter, config)
+            path.write_text(svg)
+            QMessageBox.information(self, "Exported", f"Figure saved to:\n{path}")
+        except Exception as exc:
+            QMessageBox.critical(self, "Error", f"Failed to generate figure:\n{exc}")
