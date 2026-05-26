@@ -338,3 +338,55 @@ class TestPhotogrammetryCLI:
         result = runner.invoke(app, ["photogrammetry", "--help"])
         assert result.exit_code == 0
         assert "Photogrammetry" in result.stdout or "photogrammetry" in result.stdout.lower()
+
+
+class TestPipelineIntegration:
+    """Integration test for run_pipeline with mocked COLMAP stages."""
+
+    def test_pipeline_produces_result(self, tmp_path, monkeypatch):
+        """run_pipeline should return a valid PhotogrammetryResult."""
+        from lithicore._photogrammetry import (
+            run_pipeline, PhotogrammetryConfig, _run_colmap_stage,
+        )
+        import subprocess
+
+        # Create test photos
+        photo_dir = tmp_path / "photos"
+        photo_dir.mkdir()
+        for i in range(5):
+            (photo_dir / f"img_{i:03d}.jpg").write_text("fake")
+
+        output_path = tmp_path / "result.ply"
+
+        # Mock subprocess to succeed
+        class MockProc:
+            returncode = 0
+            stdout = "Mock COLMAP output"
+            stderr = ""
+
+        monkeypatch.setattr(subprocess, "run", lambda *a, **kw: MockProc())
+
+        # Make fused.ply exist so pipeline proceeds past stage 6
+        monkeypatch.setattr(
+            "lithicore._photogrammetry._run_colmap_stage",
+            lambda stage, args, cb, ws: MockProc().stdout,
+        )
+
+        config = PhotogrammetryConfig(
+            photo_folder=photo_dir,
+            output_path=output_path,
+            artefact_label="test-artefact",
+            quality="high",
+            cleanup_temp=False,
+            colmap_workspace=tmp_path / "workspace",
+        )
+
+        result = run_pipeline(config)
+        assert result.artefact_label == "test-artefact"
+        assert result.camera_count == 5
+        # Pipeline stages ran (mocked fast, but stages executed in order)
+        assert "feature_extractor" in result.colmap_stdout
+        assert "dense_stereo" in result.colmap_stdout
+        assert isinstance(result.warnings, list)
+        # With mocked stages, result should exist on disk
+        assert result.mesh_path.exists()
