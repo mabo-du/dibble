@@ -8,6 +8,9 @@ exports: orient_auto(mesh, config) -> tuple[trimesh.Trimesh, np.ndarray]
          validate_mesh(mesh) -> MeshQualityReport
          repair_mesh(mesh) -> trimesh.Trimesh
          batch_process(directory, config) -> list[ArtefactResult]
+         PhotogrammetryConfig, PhotogrammetryResult, PhotogrammetryError,
+           ColmapNotFoundError, ColmapStageError, InsufficientPhotosError,
+           PhotogrammetryCancelledError, colmap_available, run_pipeline
 used_by: lithicope GUI, CLI users
 rules:   No GUI imports. Every public function takes a mesh + config and returns typed results.
 agent:   deepseek-v4-flash | 2026-05-26 | Initial scaffolding
@@ -33,6 +36,19 @@ try:
     from lithicore._batch import batch_process
     from lithicore._figure import FigureConfig, generate_figure
     from lithicore._comparison import compare_meshes, ComparisonResult
+    from lithicore._photogrammetry import (
+        PhotogrammetryConfig,
+        PhotogrammetryResult,
+        PhotogrammetryError,
+        ColmapNotFoundError,
+        ColmapStageError,
+        InsufficientPhotosError,
+        PhotogrammetryCancelledError,
+        run_pipeline,
+        colmap_available,
+        clean_point_cloud,
+        ProgressCallback,
+    )
 
     __all__ = [
         "MeasurementConfig", "MeasurementResult", "ArtefactResult", "Landmark",
@@ -42,6 +58,11 @@ try:
         "validate_mesh", "repair_mesh", "batch_process",
         "FigureConfig", "generate_figure",
         "compare_meshes", "ComparisonResult",
+        "PhotogrammetryConfig", "PhotogrammetryResult",
+        "PhotogrammetryError", "ColmapNotFoundError", "ColmapStageError",
+        "InsufficientPhotosError", "PhotogrammetryCancelledError",
+        "run_pipeline", "colmap_available", "clean_point_cloud",
+        "ProgressCallback",
     ]
 except ImportError as _exc:
     # Forward reference — all modules exist since Phases 2-4
