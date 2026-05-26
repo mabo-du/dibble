@@ -31,6 +31,7 @@ class Viewer3D(QWidget):
     """PyQt6 widget wrapping a PyVista interactive 3D viewport.
 
     Supports single mesh display and dual-mesh comparison overlay.
+    Also supports interactive 3D landmark placement via point picking.
     """
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
@@ -38,10 +39,13 @@ class Viewer3D(QWidget):
         self.setMinimumSize(400, 300)
 
         self._mesh: Optional[trimesh.Trimesh] = None
+        self._pv_mesh: Optional[pv.PolyData] = None
         self._mesh_b: Optional[trimesh.Trimesh] = None
         self._main_mesh_actor: Optional[tuple] = None
         self._compare_mesh_actor: Optional[tuple] = None
         self._edge_actor: Optional[tuple] = None
+        self._landmark_actors: list = []
+        self._landmark_callback = None
         self._placeholder: Optional[QLabel] = None
 
         layout = QVBoxLayout()
@@ -88,6 +92,7 @@ class Viewer3D(QWidget):
 
         self._mesh = mesh
         pv_mesh = self._mesh_to_polydata(mesh)
+        self._pv_mesh = pv_mesh
 
         self._main_mesh_actor = self.plotter.add_mesh(
             pv_mesh,
@@ -128,6 +133,7 @@ class Viewer3D(QWidget):
         self._mesh_b = mesh_b
         pv_a = self._mesh_to_polydata(mesh_a)
         pv_b = self._mesh_to_polydata(mesh_b)
+        self._pv_mesh = pv_a
 
         # Mesh A — solid gray
         self._main_mesh_actor = self.plotter.add_mesh(
@@ -182,6 +188,88 @@ class Viewer3D(QWidget):
         ]
         self.plotter.reset_camera()
         self.plotter.render()
+
+    # ── Landmark placement ─────────────────────────────────────
+
+    def enable_landmark_mode(self, callback) -> None:
+        """Enable click-to-place landmark mode.
+
+        The callback receives (x, y, z) tuple of the clicked mesh point.
+        """
+        if not HAS_PYVISTAQT or self._pv_mesh is None:
+            return
+
+        self._landmark_callback = callback
+
+        def _on_pick(picked_point):
+            """Handle mesh click — extract 3D coordinate from the picked point."""
+            if picked_point is None:
+                return
+            # picked_point is a 3D numpy array of the clicked location
+            if self._landmark_callback:
+                self._landmark_callback(
+                    float(picked_point[0]),
+                    float(picked_point[1]),
+                    float(picked_point[2]),
+                )
+
+        self.plotter.enable_point_picking(
+            callback=_on_pick,
+            show_message="Click on the mesh to place a landmark",
+            use_mesh=True,
+            pickable=True,
+        )
+
+    def disable_landmark_mode(self) -> None:
+        """Disable landmark placement mode."""
+        if not HAS_PYVISTAQT:
+            return
+        # Disable picker by clearing the interaction style
+        self.plotter.disable_picking()
+        self._landmark_callback = None
+
+    def refresh_landmarks(self, landmarks: list) -> None:
+        """Refresh displayed landmark spheres from a list of Landmark objects."""
+        # Remove old landmark actors
+        for actor in self._landmark_actors:
+            self.plotter.remove_actor(actor, render=False)
+        self._landmark_actors.clear()
+
+        # Add new landmark spheres
+        from lithicore._models import Landmark
+        for i, lm in enumerate(landmarks):
+            sphere = pv.Sphere(radius=max(1.0, self._pv_mesh.length * 0.01),
+                               center=[lm.x, lm.y, lm.z])
+            actor = self.plotter.add_mesh(
+                sphere,
+                color="red",
+                smooth_shading=True,
+                opacity=0.9,
+            )
+            # Add label
+            label_actor = self.plotter.add_point_labels(
+                np.array([[lm.x, lm.y, lm.z]]),
+                [f"{i + 1}: {lm.name}"],
+                point_size=0.01,
+                font_size=10,
+                text_color="black",
+                shape="rect",
+                fill_shape=False,
+            )
+            self._landmark_actors.append(actor)
+            self._landmark_actors.append(label_actor)
+
+        self.plotter.render()
+
+    def clear_landmarks(self) -> None:
+        """Remove all landmark actors."""
+        for actor in self._landmark_actors:
+            self.plotter.remove_actor(actor, render=False)
+        self._landmark_actors.clear()
+        self.disable_landmark_mode()
+        self.plotter.render()
+
+    # ── Scene management ────────────────────────────────────────
 
     def _clear_scene(self) -> None:
         """Remove all actors from the scene."""

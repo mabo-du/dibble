@@ -23,6 +23,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QAction
 
+from lithicore._models import MeshGrade
 from lithicope._viewer_3d import Viewer3D
 from lithicope._import_dialog import ImportDialog
 from lithicope._results_panel import ResultsPanel
@@ -42,6 +43,8 @@ class MainWindow(QMainWindow):
         self._batch_results: List = []
         self._compare_mesh_path: Optional[Path] = None
         self._in_comparison_mode: bool = False
+        self._landmark_manager = None
+        self._in_landmark_mode: bool = False
 
         self._init_ui()
         self._init_menu()
@@ -124,6 +127,22 @@ class MainWindow(QMainWindow):
         clear_compare_action = QAction("&Clear Comparison", self)
         clear_compare_action.triggered.connect(self._on_clear_comparison)
         tools_menu.addAction(clear_compare_action)
+
+        # Landmark placement
+        tools_menu.addSeparator()
+        lm_action = QAction("&Place Landmarks...", self)
+        lm_action.setShortcut("Ctrl+L")
+        lm_action.triggered.connect(self._on_place_landmarks)
+        tools_menu.addAction(lm_action)
+
+        undo_lm_action = QAction("&Undo Last Landmark", self)
+        undo_lm_action.setShortcut("Ctrl+Z")
+        undo_lm_action.triggered.connect(self._on_undo_landmark)
+        tools_menu.addAction(undo_lm_action)
+
+        clear_lm_action = QAction("C&lear All Landmarks", self)
+        clear_lm_action.triggered.connect(self._on_clear_landmarks)
+        tools_menu.addAction(clear_lm_action)
 
         # Help menu
         help_menu = menu.addMenu("&Help")
@@ -269,7 +288,7 @@ class MainWindow(QMainWindow):
             from lithicore._orientation import orient_auto
             from lithicore._edge_detection import detect_edges
             from lithicore._comparison import compare_meshes
-            from lithicore._models import MeasurementConfig
+            from lithicore._models import MeasurementConfig, MeshGrade
 
             mesh_a = trimesh.load(str(self._current_mesh_path), force="mesh")
             mesh_b = trimesh.load(str(compare_path), force="mesh")
@@ -308,7 +327,7 @@ class MainWindow(QMainWindow):
             self.results_panel.show_measurements(
                 results_list,
                 f"{self._current_mesh_path.stem} vs {compare_path.stem}",
-                "pass",
+                MeshGrade.PASS,
             )
             self.status.showMessage(f"Comparison: {self._current_mesh_path.stem} vs {compare_path.stem}")
         except Exception as exc:
@@ -327,3 +346,86 @@ class MainWindow(QMainWindow):
         """Adjust overlay mesh opacity."""
         opacity = value / 100.0
         self.viewer.set_overlay_opacity(opacity)
+
+    # ── Landmark methods ────────────────────────────────────────
+
+    def _on_place_landmarks(self) -> None:
+        """Enter landmark placement mode."""
+        if self._current_mesh_path is None:
+            QMessageBox.information(self, "No Mesh", "Load a mesh first.")
+            return
+
+        from lithicore._landmarks import LandmarkManager, LANDMARK_SCHEMES
+
+        if self._landmark_manager is None:
+            self._landmark_manager = LandmarkManager(LANDMARK_SCHEMES["flake_13"])
+
+        if not self._in_landmark_mode:
+            self._in_landmark_mode = True
+            self.viewer.enable_landmark_mode(self._on_landmark_placed)
+            self.status.showMessage(
+                f"Landmark mode: click on mesh to place landmarks "
+                f"({self._landmark_manager.remaining} remaining)"
+            )
+        else:
+            QMessageBox.information(
+                self, "Already Placing",
+                "Already in landmark mode. Click on the mesh to place points, "
+                "or use Undo Last Landmark to remove the most recent."
+            )
+
+    def _on_landmark_placed(self, x: float, y: float, z: float) -> None:
+        """Callback when user clicks on the mesh in landmark mode."""
+        if self._landmark_manager is None:
+            return
+
+        import numpy as np
+        lm = self._landmark_manager.place_landmark(np.array([x, y, z]))
+        self.viewer.refresh_landmarks(self._landmark_manager.landmarks)
+
+        # Update results panel with current landmarks
+        from lithicore._models import MeasurementResult
+        results = [
+            MeasurementResult(
+                name=f"LM {i+1}: {lm.name}",
+                value=0.0,
+                unit="",
+                confidence=1.0,
+            )
+            for i, lm in enumerate(self._landmark_manager.landmarks)
+        ]
+        self.results_panel.show_measurements(
+            results,
+            f"{self._current_mesh_path.stem} — Landmarks ({self._landmark_manager.remaining} left)",
+            MeshGrade.PASS,
+        )
+
+        if self._landmark_manager.is_complete:
+            self.status.showMessage(f"All {len(self._landmark_manager.landmarks)} landmarks placed! Export to MorphoJ.")
+            self.viewer.disable_landmark_mode()
+            self._in_landmark_mode = False
+        else:
+            self.status.showMessage(
+                f"Placed {lm.name} — {self._landmark_manager.remaining} remaining"
+            )
+
+    def _on_undo_landmark(self) -> None:
+        """Remove the most recently placed landmark."""
+        if self._landmark_manager is None or not self._landmark_manager.landmarks:
+            QMessageBox.information(self, "No Landmarks", "No landmarks to undo.")
+            return
+
+        removed = self._landmark_manager.remove_last()
+        if removed:
+            self.viewer.refresh_landmarks(self._landmark_manager.landmarks)
+            self.status.showMessage(f"Removed {removed.name} — {self._landmark_manager.remaining} remaining")
+
+    def _on_clear_landmarks(self) -> None:
+        """Clear all placed landmarks."""
+        if self._landmark_manager is None:
+            return
+        self._landmark_manager.clear()
+        self.viewer.clear_landmarks()
+        self._in_landmark_mode = False
+        self.results_panel.show_measurements([], "No landmarks", MeshGrade.PASS)
+        self.status.showMessage("All landmarks cleared")
