@@ -82,7 +82,10 @@ def clean_point_cloud(
     """Remove statistical outliers from a point cloud.
 
     For each point, compute mean distance to k=20 nearest neighbours.
-    Remove points where mean distance > global_mean + (threshold * stddev).
+    Remove points where mean distance > global_mean + (threshold * effective_std),
+    where effective_std = max(raw_stddev, point_spread * 0.35). The spatial-spread
+    floor prevents over-aggressive removal in tightly clustered clouds where
+    nearest-neighbour distance variance is small relative to cloud extent.
 
     Args:
         points: (N, 3) array of 3D points.
