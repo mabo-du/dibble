@@ -32,6 +32,7 @@ try:
     from lithicore._validation import validate_mesh, repair_mesh
     from lithicore._batch import batch_process
     from lithicore._figure import FigureConfig, generate_figure
+    from lithicore._comparison import compare_meshes, ComparisonResult
 
     __all__ = [
         "MeasurementConfig", "MeasurementResult", "ArtefactResult", "Landmark",
@@ -40,6 +41,7 @@ try:
         "extract_metrics", "detect_edges", "platform_angles",
         "validate_mesh", "repair_mesh", "batch_process",
         "FigureConfig", "generate_figure",
+        "compare_meshes", "ComparisonResult",
     ]
 except ImportError as _exc:
     # Forward reference — all modules exist since Phases 2-4
