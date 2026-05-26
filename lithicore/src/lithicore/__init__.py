@@ -8,9 +8,10 @@ exports: orient_auto(mesh, config) -> tuple[trimesh.Trimesh, np.ndarray]
          validate_mesh(mesh) -> MeshQualityReport
          repair_mesh(mesh) -> trimesh.Trimesh
          batch_process(directory, config) -> list[ArtefactResult]
-         PhotogrammetryConfig, PhotogrammetryResult, PhotogrammetryError,
-           ColmapNotFoundError, ColmapStageError, InsufficientPhotosError,
-           PhotogrammetryCancelledError, colmap_available, run_pipeline
+          PhotogrammetryConfig, PhotogrammetryResult, PhotogrammetryError,
+            ColmapNotFoundError, ColmapStageError, InsufficientPhotosError,
+            PhotogrammetryCancelledError, colmap_available, run_pipeline
+          ScaleResult, detect_scale_aruco, apply_scale_to_mesh
 used_by: lithicope GUI, CLI users
 rules:   No GUI imports. Every public function takes a mesh + config and returns typed results.
 agent:   deepseek-v4-flash | 2026-05-26 | Initial scaffolding
@@ -49,6 +50,11 @@ try:
         clean_point_cloud,
         ProgressCallback,
     )
+    from lithicore._scale_detection import (
+        ScaleResult,
+        detect_scale_aruco,
+        apply_scale_to_mesh,
+    )
 
     __all__ = [
         "MeasurementConfig", "MeasurementResult", "ArtefactResult", "Landmark",
@@ -63,6 +69,7 @@ try:
         "InsufficientPhotosError", "PhotogrammetryCancelledError",
         "run_pipeline", "colmap_available", "clean_point_cloud",
         "ProgressCallback",
+        "ScaleResult", "detect_scale_aruco", "apply_scale_to_mesh",
     ]
 except ImportError as _exc:
     # Forward reference — all modules exist since Phases 2-4

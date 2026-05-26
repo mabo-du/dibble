@@ -495,6 +495,88 @@ def run_pipeline(
         )
         colmap_stdout_parts.append(f"=== stereo_fusion ===\n{stdout}")
 
+        # Stage 5b: Scale detection (between fusion and cleaning)
+        scale_result = None
+        if fused_ply.exists():
+            if progress_cb:
+                progress_cb("scale_detection", 0.0, "Detecting scale reference...")
+
+            try:
+                from lithicore._scale_detection import (
+                    detect_scale_aruco,
+                    detect_scale_ruler,
+                    apply_scale_to_mesh,
+                )
+
+                # Determine sparse input directory
+                sparse_input = sparse_path / "0"
+                if not sparse_input.exists():
+                    sparse_input = sparse_path
+
+                if config.scale_bar_cm > 0:
+                    scale_result = detect_scale_aruco(
+                        config.photo_folder, sparse_input,
+                        marker_size_mm=config.scale_bar_cm * 10,
+                    )
+                else:
+                    scale_result = detect_scale_aruco(
+                        config.photo_folder, sparse_input,
+                    )
+                    if scale_result is None:
+                        scale_result = detect_scale_ruler(
+                            config.photo_folder, sparse_input,
+                        )
+
+                if scale_result is not None and scale_result.scale_factor != 1.0:
+                    if progress_cb:
+                        progress_cb(
+                            "scale_detection", 0.8,
+                            f"Applying scale: {scale_result.scale_factor:.4f} "
+                            f"({scale_result.method})",
+                        )
+
+                    # Scale the fused point cloud
+                    cloud_mesh = trimesh.load(str(fused_ply))
+                    scaled_mesh = apply_scale_to_mesh(
+                        cloud_mesh, scale_result.scale_factor
+                    )
+                    scaled_mesh.export(str(fused_ply))
+
+                    if scale_result.warnings:
+                        warnings.extend(scale_result.warnings)
+
+                    if progress_cb:
+                        progress_cb(
+                            "scale_detection", 1.0,
+                            f"Scale: {scale_result.method}, "
+                            f"{scale_result.confidence:.0%} confidence",
+                        )
+                elif scale_result is not None and scale_result.warnings:
+                    warnings.extend(scale_result.warnings)
+                    if progress_cb:
+                        progress_cb(
+                            "scale_detection", 1.0,
+                            "Scale detection: " + scale_result.warnings[0],
+                        )
+                else:
+                    if progress_cb:
+                        progress_cb(
+                            "scale_detection", 1.0,
+                            "No scale reference detected — mesh in arbitrary units",
+                        )
+                    warnings.append(
+                        "No scale reference detected. "
+                        "Measurements will be in COLMAP's arbitrary units. "
+                        "Use Tools -> Set Scale in the viewer to set scale manually."
+                    )
+
+            except ImportError:
+                if progress_cb:
+                    progress_cb("scale_detection", 1.0, "Scale detection unavailable")
+        else:
+            if progress_cb:
+                progress_cb("scale_detection", 1.0, "Skipped (no fused point cloud)")
+
         # Stage 6: Point cloud cleaning
         if progress_cb:
             progress_cb("cleaning", 0.0, "Cleaning point cloud...")
