@@ -2,7 +2,7 @@
 
 exports: app (typer.Typer)
 used_by: Users running `lithicore batch --input ...`
-rules:   Typer-based CLI. Subcommands: batch, info.
+rules:   Typer-based CLI. Subcommands: batch, info, figure.
 agent:   deepseek-v4-flash | 2026-05-26 | Initial implementation
 """
 
@@ -73,6 +73,26 @@ def info(
     typer.echo(f"Area:     {mesh.area:.2f} mm²")
     if mesh.is_watertight:
         typer.echo(f"Volume:   {mesh.volume:.2f} mm³")
+
+
+@app.command()
+def figure(
+    mesh_path: Path = typer.Argument(..., help="Path to a mesh file"),
+    output: Path = typer.Option("figure.svg", "--output", "-o", help="Output SVG path"),
+    no_measurements: bool = typer.Option(False, "--no-measurements", help="Hide measurement callouts"),
+    no_ridges: bool = typer.Option(False, "--no-ridges", help="Hide scar ridge lines"),
+    label: str = typer.Option("", "--label", "-l", help="Artefact label"),
+) -> None:
+    """Generate a publication figure from a mesh file."""
+    from lithicore._figure import FigureConfig, figure_cli
+
+    config = FigureConfig(
+        show_measurements=not no_measurements,
+        show_ridges=not no_ridges,
+        artefact_label=label or mesh_path.stem,
+    )
+    figure_cli(mesh_path, output, config)
+    typer.echo(f"Figure saved to {output}")
 
 
 if __name__ == "__main__":
