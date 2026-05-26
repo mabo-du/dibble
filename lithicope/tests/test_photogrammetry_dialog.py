@@ -62,3 +62,19 @@ def test_dialog_creates_in_expert_mode(qapp, qtbot, tmp_path, tmp_photos):
     qtbot.addWidget(dialog)
     assert dialog.windowTitle() != ""
     dialog.close()
+
+
+@pytest.mark.skipif(not HAS_QT, reason="PyQt6 not available")
+def test_batch_dialog_construction(qapp, qtbot, tmp_path):
+    """Batch dialog should construct without error."""
+    from lithicope._batch_photogrammetry import BatchPhotogrammetryDialog
+    artefacts_dir = tmp_path / "artefacts"
+    artefacts_dir.mkdir()
+    for label in ["FLK-001", "FLK-002"]:
+        (artefacts_dir / label).mkdir()
+        for i in range(3):
+            (artefacts_dir / label / f"img_{i:03d}.jpg").write_text("fake")
+    dialog = BatchPhotogrammetryDialog(artefacts_dir, None)
+    qtbot.addWidget(dialog)
+    assert dialog.windowTitle() != ""
+    dialog.close()
