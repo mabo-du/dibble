@@ -1,0 +1,5 @@
+{"type":"server-started","port":60202,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:60202","screen_dir":"/home/mark/Git/lithic-analysis-platform/.superpowers/brainstorm/3678466-1779779879/content","state_dir":"/home/mark/Git/lithic-analysis-platform/.superpowers/brainstorm/3678466-1779779879/state"}
+{"type":"screen-added","file":"/home/mark/Git/lithic-analysis-platform/.superpowers/brainstorm/3678466-1779779879/content/approaches.html"}
+{"source":"user-event","type":"click","text":"C\n    \n      Trimesh silhouette + SVG\n      Pure vector, no raster step","choice":"c","id":null,"timestamp":1779780129981}
+{"type":"screen-added","file":"/home/mark/Git/lithic-analysis-platform/.superpowers/brainstorm/3678466-1779779879/content/rethink.html"}
+{"source":"user-event","type":"click","text":"✓\n    \n      VTK GL2PS — best of both\n      Preview in viewer + vector output. Reuses what we have.","choice":"hybrid","id":null,"timestamp":1779781507996}

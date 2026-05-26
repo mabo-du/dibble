@@ -12,6 +12,7 @@ used_by: lithicope GUI, CLI users
 rules:   No GUI imports. Every public function takes a mesh + config and returns typed results.
 agent:   deepseek-v4-flash | 2026-05-26 | Initial scaffolding
          deepseek-v4-flash | 2026-05-26 | All modules wired — full public API exported
+         deepseek-v4-flash | 2026-05-26 | Added FigureConfig + generate_figure export
 """
 
 # pylint: disable=unused-import
@@ -30,6 +31,7 @@ try:
     from lithicore._platform_angle import platform_angles
     from lithicore._validation import validate_mesh, repair_mesh
     from lithicore._batch import batch_process
+    from lithicore._figure import FigureConfig, generate_figure
 
     __all__ = [
         "MeasurementConfig", "MeasurementResult", "ArtefactResult", "Landmark",
@@ -37,6 +39,7 @@ try:
         "orient_auto", "orient_manual",
         "extract_metrics", "detect_edges", "platform_angles",
         "validate_mesh", "repair_mesh", "batch_process",
+        "FigureConfig", "generate_figure",
     ]
 except ImportError as _exc:
     # Forward reference — all modules exist since Phases 2-4
