@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lithicope"
+version = "0.1.0"
+description = "Desktop GUI for 3D lithic morphological analysis"
+requires-python = ">=3.11"
+dependencies = [
+    "lithicore>=0.1.0",
+    "PyQt6>=6.5",
+    "open3d>=0.17",
+    "pandas>=2.0",
+    "reportlab>=4.0",
+]
+
+[project.scripts]
+lithicope = "lithicope.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
