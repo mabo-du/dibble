@@ -5,7 +5,8 @@ exports: PhotogrammetryConfig
          PhotogrammetryError, ColmapNotFoundError, ColmapStageError,
            InsufficientPhotosError, PhotogrammetryCancelledError
          run_pipeline(config, progress_cb=None) -> PhotogrammetryResult
-         clean_point_cloud(cloud, config) -> np.ndarray
+         colmap_available() -> bool
+         clean_point_cloud(points, threshold=2.0) -> np.ndarray
 used_by: lithicore CLI, lithicope GUI
 rules:   Zero GUI imports. Pure functions with dataclass configs.
          COLMAP is run via subprocess; pre/post processing is Python-native.

@@ -171,8 +171,37 @@ class TestCleanPointCloud:
         assert len(cleaned) == len(clean_cloud)
 
     def test_crop_background_removes_distant_points(self, noisy_cloud):
-        from lithicore._photogrammetry import clean_point_cloud, _crop_background
+        from lithicore._photogrammetry import _crop_background
         cropped = _crop_background(noisy_cloud, margin=1.5)
         # Distant outliers removed
         assert len(cropped) < len(noisy_cloud)
         assert len(cropped) >= 950
+
+    def test_small_cloud_returns_unchanged(self):
+        """Fewer than 21 points should skip outlier removal."""
+        from lithicore._photogrammetry import clean_point_cloud
+        points = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2],
+                           [3, 3, 3], [4, 4, 4]])
+        result = clean_point_cloud(points, threshold=2.0)
+        assert len(result) == 5
+
+    def test_crop_small_cloud_returns_unchanged(self):
+        """Fewer than 10 points should skip background crop."""
+        from lithicore._photogrammetry import _crop_background
+        points = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])
+        result = _crop_background(points, margin=1.5)
+        assert len(result) == 3
+
+    def test_degenerate_cloud_identical_points(self):
+        """All identical points should not crash (global_std == 0 guard)."""
+        from lithicore._photogrammetry import clean_point_cloud
+        points = np.ones((50, 3))
+        result = clean_point_cloud(points, threshold=2.0)
+        assert len(result) == 50  # All kept, no statistical variance
+
+    def test_degenerate_crop_identical_points(self):
+        """Crop with all-identical points should not crash (zero covariance)."""
+        from lithicore._photogrammetry import _crop_background
+        points = np.ones((50, 3))
+        result = _crop_background(points, margin=1.5)
+        assert len(result) == 50  # All kept
