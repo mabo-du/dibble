@@ -27,8 +27,12 @@ Dibble is a desktop application for automated 3D lithic (stone tool) morphologic
 - **3D landmarks** — click-to-place anatomical landmarks on the mesh, scheme-guided naming (13-point flake, 16-point biface), export to MorphoJ
 - **Flake scar detection** — automated scar segmentation via Shape Index curvature analysis and watershed algorithm
 
-### v3 (planned)
+### v3 — Photogrammetry (released May 2026)
 - **Photogrammetry pipeline** — photos → 3D mesh via COLMAP
+- **Three-tier import** — Default (one-click), Guided (settings), Expert (full COLMAP control)
+- **Point cloud cleaning** — statistical outlier removal + automatic background cropping
+- **Batch queue** — process multiple artefacts sequentially with progress tracking
+- **CLI integration** — `lithicore photogrammetry` for headless or batch processing
 
 ---
 
@@ -84,6 +88,7 @@ dibble-gui/                # Desktop GUI (PyQt6, depends on dibble)
 - **PyQt6** — for the GUI
 - **PyVista / VTK** — for 3D rendering and figure export
 - **trimesh, NumPy, SciPy** — for mesh processing and measurements
+- **COLMAP** — for photogrammetry reconstruction (install separately: `brew install colmap`, `sudo apt install colmap`, or `conda install -c conda-forge colmap`)
 - **pandas, ReportLab** — for CSV and PDF export
 
 ## Configuration
@@ -97,7 +102,7 @@ config = MeasurementConfig(repair_mesh=True, edge_threshold_degrees=45.0)
 
 ## Project status
 
-Active development. v1 and v2 features are complete. v3 (photogrammetry) is the next major milestone.
+v1 and v2 features are complete. v3 (photogrammetry) is released. Active development continues with planned enhancements including scale bar auto-detection, GPU acceleration, and live point cloud preview.
 
 ---
 
