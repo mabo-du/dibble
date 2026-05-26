@@ -6,7 +6,10 @@ used_by: pytest
 rules:   No COLMAP dependency required for unit tests.
          Synthetic data only.
 agent:   deepseek-v4-flash | 2026-05-27 | Initial test skeleton
+agent:   deepseek-v4-flash | 2026-05-27 | Added ArUco marker detection tests
 """
+
+from pathlib import Path
 
 import numpy as np
 import trimesh
@@ -75,3 +78,50 @@ class TestApplyScale:
     def test_apply_scale_preserves_faces(self, unit_cube):
         scaled = apply_scale_to_mesh(unit_cube, scale_factor=3.0)
         assert len(scaled.faces) == len(unit_cube.faces)
+
+
+class TestDetectScaleArUco:
+    """ArUco marker detection with synthetic images."""
+
+    def test_aruco_no_markers_returns_none(self, tmp_path):
+        """When no markers in photos, should return None."""
+        from lithicore._scale_detection import detect_scale_aruco
+        photo_dir = tmp_path / "photos"
+        photo_dir.mkdir()
+        import cv2
+        blank = np.zeros((480, 640), dtype=np.uint8)
+        cv2.imwrite(str(photo_dir / "img_001.jpg"), blank)
+        sparse_dir = tmp_path / "sparse"
+        sparse_dir.mkdir()
+        result = detect_scale_aruco(photo_dir, sparse_dir, marker_size_mm=20.0)
+        assert result is None
+
+    def test_aruco_empty_photo_dir_returns_none(self, tmp_path):
+        from lithicore._scale_detection import detect_scale_aruco
+        empty_dir = tmp_path / "empty"
+        empty_dir.mkdir()
+        sparse_dir = tmp_path / "sparse"
+        sparse_dir.mkdir()
+        result = detect_scale_aruco(empty_dir, sparse_dir, marker_size_mm=20.0)
+        assert result is None
+
+    def test_aruco_returns_scale_warning_when_opencv_missing(self, tmp_path, monkeypatch):
+        """If OpenCV is not installed, should return ScaleResult with warning."""
+        monkeypatch.setattr("lithicore._scale_detection._read_photos", lambda d: [Path("fake.jpg")])
+        # Mock ImportError for cv2
+        import builtins
+        real_import = builtins.__import__
+
+        def mock_import(name, *args, **kwargs):
+            if name == "cv2":
+                raise ImportError("No module named cv2")
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", mock_import)
+
+        from lithicore._scale_detection import detect_scale_aruco
+        result = detect_scale_aruco(tmp_path, tmp_path)
+        assert result is not None
+        assert result.method == "aruco"
+        assert result.confidence == 0.0
+        assert any("OpenCV" in w for w in result.warnings)

@@ -8,6 +8,7 @@ used_by: lithicore photogrammetry pipeline
 rules:   Pure functions, no GUI imports. Scale detection operates on sparse cloud
          + source photos, not dense mesh.
 agent:   deepseek-v4-flash | 2026-05-27 | Initial — dataclass + mesh transform
+agent:   deepseek-v4-flash | 2026-05-27 | Added ArUco detection + COLMAP I/O + triangulation
 """
 
 from __future__ import annotations
@@ -65,3 +66,268 @@ def apply_scale_to_mesh(
     scaled.face_normals = None
     scaled.vertex_normals = None
     return scaled
+
+
+# ──────────────────────────────────────────────
+# Helpers
+# ──────────────────────────────────────────────
+
+SUPPORTED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tiff", ".tif"}
+
+
+def _read_photos(photo_dir: Path) -> list[Path]:
+    """Return sorted list of supported image files in a directory."""
+    return sorted([
+        p for p in photo_dir.iterdir()
+        if p.suffix.lower() in SUPPORTED_IMAGE_EXTENSIONS
+    ])
+
+
+# ──────────────────────────────────────────────
+# COLMAP binary I/O
+# ──────────────────────────────────────────────
+
+def _read_colmap_sparse(sparse_dir: Path) -> tuple:
+    """Read COLMAP sparse reconstruction data.
+
+    Returns (cameras, images) dicts from COLMAP binary format.
+    Uses pycolmap if available, otherwise direct binary parsing.
+
+    Raises FileNotFoundError if camera/ image data is missing.
+    """
+    # Paths may be in subdir "0" or directly in sparse_dir
+    cameras_path = sparse_dir / "cameras.bin"
+    images_path = sparse_dir / "images.bin"
+
+    if not cameras_path.exists():
+        cameras_path = sparse_dir.parent / "cameras.bin"
+    if not images_path.exists():
+        images_path = sparse_dir.parent / "images.bin"
+
+    if not cameras_path.exists() or not images_path.exists():
+        raise FileNotFoundError(
+            f"COLMAP sparse data not found in {sparse_dir}"
+        )
+
+    try:
+        import struct
+        from collections import namedtuple
+
+        # Simpler named tuples for COLMAP data
+        Camera = namedtuple("Camera", ["camera_id", "model_id", "width", "height", "params"])
+        Image = namedtuple("Image", ["image_id", "name", "qw", "qx", "qy", "qz",
+                                     "tx", "ty", "tz", "camera_id"])
+
+        def _read_cameras(path):
+            cameras = {}
+            with open(path, "rb") as f:
+                num = struct.unpack("Q", f.read(8))[0]
+                for _ in range(num):
+                    cam_id = struct.unpack("I", f.read(4))[0]
+                    model_id = struct.unpack("i", f.read(4))[0]
+                    width = struct.unpack("Q", f.read(8))[0]
+                    height = struct.unpack("Q", f.read(8))[0]
+                    n_params = {0: 4, 1: 4, 2: 5, 3: 8, 4: 5, 5: 8, 6: 12, 7: 3}.get(model_id, 4)
+                    params = struct.unpack(f"{n_params}d", f.read(n_params * 8))
+                    cameras[cam_id] = Camera(cam_id, model_id, width, height, params)
+            return cameras
+
+        def _read_images(path):
+            images = {}
+            with open(path, "rb") as f:
+                num = struct.unpack("Q", f.read(8))[0]
+                for _ in range(num):
+                    img_id = struct.unpack("I", f.read(4))[0]
+                    qw, qx, qy, qz = struct.unpack("dddd", f.read(32))
+                    tx, ty, tz = struct.unpack("ddd", f.read(24))
+                    cam_id = struct.unpack("I", f.read(4))[0]
+                    name = b""
+                    while True:
+                        b = f.read(1)
+                        if b == b"\x00":
+                            break
+                        name += b
+                    name = name.decode("utf-8")
+                    n_pts = struct.unpack("Q", f.read(8))[0]
+                    f.read(n_pts * 24)  # skip point2D data
+                    images[img_id] = Image(img_id, name, qw, qx, qy, qz, tx, ty, tz, cam_id)
+            return images
+
+        return _read_cameras(str(cameras_path)), _read_images(str(images_path))
+
+    except Exception as exc:
+        raise FileNotFoundError(
+            f"Failed to read COLMAP sparse data: {exc}"
+        ) from exc
+
+
+# ──────────────────────────────────────────────
+# Corner triangulation
+# ──────────────────────────────────────────────
+
+def _triangulate_corner(
+    observations: list[tuple[int, np.ndarray]],
+    cameras: dict,
+    images: dict,
+) -> Optional[np.ndarray]:
+    """Triangulate a 3D point from 2D observations in multiple views."""
+    import cv2 as _cv2
+
+    points_2d = []
+    proj_mats = []
+
+    for image_id, pixel in observations[:10]:
+        if image_id not in images:
+            continue
+        img = images[image_id]
+        if img.camera_id not in cameras:
+            continue
+        cam = cameras[img.camera_id]
+
+        # Camera matrix K
+        fx, fy, cx, cy = cam.params[0], cam.params[1], cam.params[2], cam.params[3]
+        K = np.array([[fx, 0, cx], [0, fy, cy], [0, 0, 1]], dtype=np.float64)
+
+        # Rotation from quaternion
+        qw, qx, qy, qz = img.qw, img.qx, img.qy, img.qz
+        R = np.array([
+            [1 - 2*qy*qy - 2*qz*qz, 2*qx*qy - 2*qz*qw, 2*qx*qz + 2*qy*qw],
+            [2*qx*qy + 2*qz*qw, 1 - 2*qx*qx - 2*qz*qz, 2*qy*qz - 2*qx*qw],
+            [2*qx*qz - 2*qy*qw, 2*qy*qz + 2*qx*qw, 1 - 2*qx*qx - 2*qy*qy],
+        ], dtype=np.float64)
+
+        t = np.array([[img.tx], [img.ty], [img.tz]], dtype=np.float64)
+        P = K @ np.hstack([R, t])
+        proj_mats.append(P)
+        points_2d.append(pixel)
+
+    if len(points_2d) < 2:
+        return None
+
+    X = _cv2.triangulatePoints(
+        proj_mats[0], proj_mats[1],
+        points_2d[0:1].T, points_2d[1:2].T,
+    )
+    X = X[:3] / X[3]
+    return X.flatten()
+
+
+# ──────────────────────────────────────────────
+# ArUco marker detection
+# ──────────────────────────────────────────────
+
+def detect_scale_aruco(
+    photo_dir: Path,
+    sparse_dir: Path,
+    marker_size_mm: float = 20.0,
+) -> Optional[ScaleResult]:
+    """Detect ArUco markers in photos and compute scale factor.
+
+    Detects markers via cv2.aruco, triangulates corner positions
+    using COLMAP's camera poses, and computes scale from marker's
+    known physical size.
+
+    Args:
+        photo_dir: Directory containing input photos.
+        sparse_dir: Directory containing COLMAP sparse reconstruction.
+        marker_size_mm: Physical size of the ArUco marker in mm.
+
+    Returns:
+        ScaleResult if detected, None if no markers found.
+    """
+    try:
+        import cv2
+        import cv2.aruco as aruco
+    except ImportError:
+        return ScaleResult(
+            scale_factor=1.0, method="aruco", confidence=0.0,
+            detected_length_mm=0.0,
+            warnings=["OpenCV not installed. Install: pip install opencv-python"],
+        )
+
+    photos = _read_photos(photo_dir)
+    if not photos:
+        return None
+
+    # Read COLMAP data
+    try:
+        cameras, images = _read_colmap_sparse(sparse_dir)
+    except (FileNotFoundError, ValueError):
+        return None
+
+    # Detect markers
+    dictionary = aruco.getPredefinedDictionary(aruco.DICT_6X6_250)
+    params = aruco.DetectorParameters()
+    detector = aruco.ArucoDetector(dictionary, params)
+
+    # Map: photo filename -> image_id
+    photo_to_id = {img.name: img_id for img_id, img in images.items()}
+
+    # Collect marker observations: marker_id -> [(image_id, corner_idx, pixel_xy)]
+    marker_obs: dict[int, list[tuple[int, int, np.ndarray]]] = {}
+
+    for photo_path in photos:
+        img = cv2.imread(str(photo_path), cv2.IMREAD_GRAYSCALE)
+        if img is None:
+            continue
+        corners, ids, _ = detector.detectMarkers(img)
+        if ids is None:
+            continue
+        img_id = photo_to_id.get(photo_path.name)
+        if img_id is None:
+            continue
+
+        for idx in range(len(ids)):
+            mid = int(ids[idx].flatten()[0])
+            if mid not in marker_obs:
+                marker_obs[mid] = []
+            for cidx in range(4):
+                px, py = corners[idx][0][cidx]
+                marker_obs[mid].append((img_id, cidx, np.array([px, py])))
+
+    if not marker_obs:
+        return None
+
+    # Triangulate corners and compute scale
+    scales: list[float] = []
+    for mid, obs in marker_obs.items():
+        # Group by corner index
+        by_corner: dict[int, list[tuple[int, np.ndarray]]] = {}
+        for img_id, cidx, px in obs:
+            by_corner.setdefault(cidx, []).append((img_id, px))
+
+        corners_3d: dict[int, np.ndarray] = {}
+        for cidx, pts in by_corner.items():
+            if len(pts) >= 2:
+                pt = _triangulate_corner(pts, cameras, images)
+                if pt is not None:
+                    corners_3d[cidx] = pt
+
+        if len(corners_3d) < 4:
+            continue
+
+        for i, j in [(0, 1), (1, 2), (2, 3), (3, 0)]:
+            if i in corners_3d and j in corners_3d:
+                d = float(np.linalg.norm(corners_3d[i] - corners_3d[j]))
+                if d > 0:
+                    scales.append(marker_size_mm / d)
+
+    if not scales:
+        return None
+
+    arr = np.array(scales)
+    med = float(np.median(arr))
+    std = float(arr.std())
+    valid = arr[np.abs(arr - med) <= 2 * std]
+    if len(valid) == 0:
+        return None
+
+    final_scale = float(np.median(valid))
+    confidence = min(1.0, len(valid) / 10.0)
+
+    return ScaleResult(
+        scale_factor=final_scale,
+        method="aruco",
+        confidence=confidence,
+        detected_length_mm=marker_size_mm,
+    )
