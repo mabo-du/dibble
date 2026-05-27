@@ -358,6 +358,8 @@ class MainWindow(QMainWindow):
 
     def _process_single(self, path: Path, config) -> None:
         """Load, orient, measure a single mesh."""
+        # Clear previous state
+        self.viewer.clear_diagnostic_overlay()
         self.status.showMessage(f"Loading {path.name}...")
         try:
             import trimesh
