@@ -234,7 +234,7 @@ class MainWindow(QMainWindow):
         tools_menu.addSeparator()
         asst_menu = tools_menu.addMenu("&Assistant")
         open_asst_action = QAction("&Open Assistant", self)
-        open_asst_action.setShortcut("Ctrl+Shift+A")
+        open_asst_action.setShortcut("Ctrl+Shift+Q")
         open_asst_action.triggered.connect(self._on_open_assistant)
         asst_menu.addAction(open_asst_action)
 
