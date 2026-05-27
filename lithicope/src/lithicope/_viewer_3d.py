@@ -57,6 +57,8 @@ class Viewer3D(QWidget):
         self._annotation_place_callback: Optional[callable] = None
         self._annotation_select_callback: Optional[callable] = None
         self._annotations_data: list = []
+        # Diagnostic overlay state
+        self._diagnostic_actors: list = []
         self._placeholder: Optional[QLabel] = None
 
         layout = QVBoxLayout()
@@ -488,6 +490,75 @@ class Viewer3D(QWidget):
         ]
         self.plotter.reset_camera()
         self.plotter.render()
+
+    # ── Diagnostic overlays ──────────────────────────────────
+
+    def show_diagnostic_overlay(self, coords: dict) -> None:
+        """Highlight diagnostic features from classification.
+
+        coords keys: 'ridges' (blue), 'platform' (green), 'retouched_edges' (red)
+        Each value is a numpy array of 3D points or empty.
+        """
+        if not HAS_PYVISTAQT or self._pv_mesh is None:
+            return
+
+        self.clear_diagnostic_overlay()
+
+        # Ridge points — blue
+        ridges = coords.get("ridges")
+        if ridges is not None and len(ridges) > 0:
+            cloud = pv.PolyData(ridges)
+            actor = self.plotter.add_points(
+                cloud, color="blue", point_size=4.0,
+                render_points_as_spheres=True,
+            )
+            self._diagnostic_actors.append(actor)
+
+        # Platform points — green
+        platform = coords.get("platform")
+        if platform is not None and len(platform) > 0:
+            cloud = pv.PolyData(platform)
+            actor = self.plotter.add_points(
+                cloud, color="green", point_size=4.0,
+                render_points_as_spheres=True,
+            )
+            self._diagnostic_actors.append(actor)
+
+        # Retouched edges — red
+        retouch = coords.get("retouched_edges")
+        if retouch is not None and len(retouch) > 0:
+            cloud = pv.PolyData(retouch)
+            actor = self.plotter.add_points(
+                cloud, color="red", point_size=5.0,
+                render_points_as_spheres=True,
+            )
+            self._diagnostic_actors.append(actor)
+
+        # Legend text
+        legend = (
+            "Diagnostic Overlays:\n"
+            "  Blue  = Dorsal ridges\n"
+            "  Green = Platform\n"
+            "  Red   = Retouched edges"
+        )
+        self.plotter.add_text(
+            legend, position="lower_right", font_size=10, color="black",
+        )
+
+        self.plotter.render()
+
+    def clear_diagnostic_overlay(self) -> None:
+        """Remove all diagnostic overlay actors."""
+        if not HAS_PYVISTAQT:
+            return
+        for actor in self._diagnostic_actors:
+            self.plotter.remove_actor(actor, render=False)
+        self._diagnostic_actors.clear()
+        self.plotter.render()
+
+    def has_diagnostic_overlay(self) -> bool:
+        """Check if diagnostic overlays are currently shown."""
+        return len(self._diagnostic_actors) > 0
 
     # ── Scar overlay ───────────────────────────────────────────
 
