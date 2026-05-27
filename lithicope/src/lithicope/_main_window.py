@@ -32,6 +32,7 @@ from lithicope._batch_runner import BatchRunner
 from lithicope._photogrammetry_dialog import PhotogrammetryDialog
 from lithicope._batch_photogrammetry import BatchPhotogrammetryDialog
 from lithicope._annotation_panel import AnnotationPanel
+from lithicope._classification_panel import ClassificationPanel
 
 import cv2
 from datetime import datetime
@@ -89,6 +90,8 @@ class MainWindow(QMainWindow):
         self._right_tabs.addTab(self.results_panel, "Results")
         self._annotation_panel = AnnotationPanel()
         self._right_tabs.addTab(self._annotation_panel, "Annotations")
+        self._classification_panel = ClassificationPanel()
+        self._right_tabs.addTab(self._classification_panel, "Classification")
         splitter.addWidget(self._right_tabs)
 
         splitter.setSizes([660, 60, 480])
@@ -100,6 +103,10 @@ class MainWindow(QMainWindow):
         self._annotation_panel.capture_photo_requested.connect(self._on_annotation_capture_photo)
         self._annotation_panel.annotation_added.connect(lambda _: self._sync_annotation_viewer())
         self._annotation_panel.annotation_deleted.connect(lambda _: self._sync_annotation_viewer())
+
+        # Wire classification signals
+        self._classification_panel.diagnostic_overlay_requested.connect(self._on_diagnostic_overlay)
+        self._classification_panel.auto_classify_changed.connect(self._on_auto_classify_toggle)
 
     def _init_menu(self) -> None:
         menu = self.menuBar()
@@ -211,6 +218,14 @@ class MainWindow(QMainWindow):
         merge_ann_action = QAction("&Merge Annotation Set...", self)
         merge_ann_action.triggered.connect(self._annotation_panel._on_merge)
         ann_menu.addAction(merge_ann_action)
+
+        # Classification submenu
+        tools_menu.addSeparator()
+        class_menu = tools_menu.addMenu("&Classification")
+        classify_action = QAction("&Classify Artefact", self)
+        classify_action.setShortcut("Ctrl+Shift+C")
+        classify_action.triggered.connect(self._classification_panel._on_classify)
+        class_menu.addAction(classify_action)
 
         # Help menu
         help_menu = menu.addMenu("&Help")
@@ -369,7 +384,11 @@ class MainWindow(QMainWindow):
 
             self._current_mesh_path = path
             self._current_results = measurements
+            self._current_mesh = oriented
             self.viewer.display_mesh(oriented, edge_vertices)
+            # Feed mesh to classification panel for potential auto-classify
+            if self._current_mesh is not None:
+                self._classification_panel.set_mesh(self._current_mesh)
             self.results_panel.show_measurements(measurements, path.name, quality.grade)
             # Set annotation working directory
             if hasattr(self, '_annotation_panel'):
@@ -663,6 +682,16 @@ class MainWindow(QMainWindow):
         mode = self._annotation_panel.get_display_mode()
         self.viewer._annotation_display_mode = mode
         self.viewer.refresh_annotations(annotations)
+
+    # ── Classification handlers ──
+
+    def _on_diagnostic_overlay(self, coords: dict) -> None:
+        """Show diagnostic overlays on the viewer."""
+        self.viewer.show_diagnostic_overlay(coords)
+
+    def _on_auto_classify_toggle(self, enabled: bool) -> None:
+        """Handle auto-classify toggle."""
+        self.status.showMessage(f"Auto-classify: {'ON' if enabled else 'OFF'}")
 
     def _on_annotation_capture_photo(self) -> None:
         """Capture the current 3D view and attach to the selected annotation."""
