@@ -193,5 +193,24 @@ def photogrammetry(
             raise typer.Exit(code=1) from exc
 
 
+@app.command()
+def benchmark(
+    output: Path = typer.Option(
+        None, "--output", "-o",
+        help="Output directory for benchmark report (default: docs/benchmark/results)",
+    ),
+) -> None:
+    """Run the classifier validation benchmark and generate a report.
+
+    Tests all pre-trained lithic classifiers against held-out synthetic data
+    and generates an interactive HTML validation report with confusion matrices,
+    per-class metrics, and accuracy scores.
+    """
+    typer.echo("Running Dibble classifier validation benchmark...")
+    from lithicore.data.run_benchmark import main as run_benchmark
+    run_benchmark()
+    typer.echo("\nBenchmark complete. Open docs/benchmark/results/report.html to view results.")
+
+
 if __name__ == "__main__":
     app()
