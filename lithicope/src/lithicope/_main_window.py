@@ -7,7 +7,8 @@ rules:   Single-window layout: 3D viewer (60%) left, measurements panel (40%) ri
          Status bar shows current artefact and batch progress.
 agent:   deepseek-v4-flash | 2026-05-26 | Initial implementation
 agent:   deepseek-v4-flash | 2026-05-26 | Added Publication Figure menu item and _on_publication_figure handler
-         message: "imports lithicore._figure inside method — lazy import to avoid startup dependency"
+          message: "imports lithicore._figure inside method — lazy import to avoid startup dependency"
+agent:   deepseek-v4-flash | 2026-05-27 | Task 6: wired annotation panel into main window — tabbed results/annotations, placement handlers, menu items, capture photo
 """
 
 from __future__ import annotations
