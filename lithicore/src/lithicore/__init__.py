@@ -75,6 +75,9 @@ try:
         train_model,
         extract_diagnostic_coordinates,
     )
+    from lithicore._assistant import (
+        AssistantEngine,
+    )
 
     __all__ = [
         "MeasurementConfig", "MeasurementResult", "ArtefactResult", "Landmark",
@@ -96,6 +99,7 @@ try:
         "ClassificationResult", "FeatureImportance", "LithicFeatureVector",
         "ClassifierModel", "extract_features", "train_model",
         "extract_diagnostic_coordinates",
+        "AssistantEngine",
     ]
 except ImportError as _exc:
     # Forward reference — all modules exist since Phases 2-4
