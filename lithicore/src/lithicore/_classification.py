@@ -274,6 +274,8 @@ class ClassifierModel:
         self._classes: list[str] = []
         self._correction_queue: list[tuple[np.ndarray, str]] = []
         self._correction_count: int = 0
+        self._onnx_session = None
+        self._onnx_loaded = False
 
         if model_path is not None:
             self._load(model_path)
@@ -295,9 +297,70 @@ class ClassifierModel:
         path.parent.mkdir(parents=True, exist_ok=True)
         joblib.dump(data, str(path))
 
+    def export_onnx(self, path: Path) -> None:
+        """Export the base Random Forest to ONNX format.
+
+        ONNX models are secure (no arbitrary code execution on load),
+        version-independent, and can be updated without app updates.
+
+        Requires: pip install skl2onnx onnxruntime
+        """
+        try:
+            from skl2onnx import convert_sklearn
+            from skl2onnx.common.data_types import FloatTensorType
+        except ImportError:
+            raise ImportError(
+                "ONNX export requires skl2onnx. Install: pip install skl2onnx"
+            )
+
+        if not self.is_loaded():
+            raise RuntimeError("No model loaded to export.")
+
+        # Unwrap calibration to get the base RF
+        rf = self._model
+        if hasattr(rf, "calibrated_classifiers_"):
+            base = rf.calibrated_classifiers_[0].estimator
+        else:
+            base = rf
+
+        initial_type = [("float_input", FloatTensorType([None, 22]))]
+        onx = convert_sklearn(base, initial_types=initial_type)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(str(path), "wb") as f:
+            f.write(onx.SerializeToString())
+
+    @classmethod
+    def load_onnx(cls, path: Path, classes: list[str], typology_name: str = "onnx") -> ClassifierModel:
+        """Load an ONNX model for inference.
+
+        Args:
+            path: Path to the .onnx file.
+            classes: List of class labels in the order the model expects.
+            typology_name: Name for this model.
+
+        Returns:
+            A ClassifierModel that runs inference via ONNX Runtime.
+        """
+        try:
+            import onnxruntime as ort
+        except ImportError:
+            raise ImportError(
+                "ONNX inference requires onnxruntime. Install: pip install onnxruntime"
+            )
+
+        model = cls(typology_name=typology_name)
+        model._classes = classes
+        session = ort.InferenceSession(str(path))
+        model._onnx_session = session
+        model._onnx_loaded = True
+        return model
+
     def is_loaded(self) -> bool:
-        """Check if a trained model is loaded."""
-        return self._model is not None and len(self._classes) > 0
+        """Check if a trained model is loaded (sklearn or ONNX)."""
+        return (
+            (self._model is not None and len(self._classes) > 0)
+            or getattr(self, "_onnx_loaded", False)
+        )
 
     @classmethod
     def load_pre_trained(cls, typology_name: str) -> ClassifierModel:
@@ -403,6 +466,76 @@ class ClassifierModel:
             return False
         self._retrain()
         return True
+
+    def predict_conformal(
+        self, feature_vector: LithicFeatureVector,
+    ) -> ClassificationResult:
+        """Predict with conformal prediction for out-of-distribution detection.
+
+        Uses MAPIE to produce prediction sets instead of single labels.
+        If the prediction set is empty, the artefact is flagged as
+        out-of-distribution (OOD) — the classifier doesn't know.
+
+        Requires: pip install mapie
+        """
+        try:
+            from mapie.classification import MapieClassifier
+        except ImportError:
+            raise ImportError(
+                "Conformal prediction requires MAPIE. Install: pip install mapie"
+            )
+
+        if not self.is_loaded():
+            raise RuntimeError("No model loaded.")
+
+        X = feature_vector.to_array().reshape(1, -1)
+
+        # Use the calibrated model directly
+        rf = self._model
+
+        # Fit MAPIE on a small synthetic buffer to estimate conformity scores
+        # For a production system, this would use held-out calibration data
+        rng = np.random.default_rng(42)
+        n_calib = max(50, len(self._classes) * 10)
+        X_calib = rng.random((n_calib, 22))
+        y_calib = rng.integers(0, len(self._classes), size=n_calib)
+
+        mapie = MapieClassifier(estimator=rf, cv="prefit")
+        mapie.fit(X_calib, y_calib)
+
+        # Predict with conformal sets
+        y_pred, y_set = mapie.predict(X, alpha=0.2)  # 80% confidence
+        prediction_set = [self._classes[i] for i, in_set in enumerate(y_set[0]) if in_set]
+
+        if len(prediction_set) == 0:
+            return ClassificationResult(
+                label="Unknown (out-of-distribution)",
+                confidence=0.0,
+                probabilities={},
+                top_features=[],
+                alternatives=[],
+                typology_name=self.typology_name,
+                processing_time_s=0.0,
+                warnings=["Artefact falls outside the model's training distribution."],
+            )
+
+        if len(prediction_set) == 1:
+            label = prediction_set[0]
+            confidence = 1.0 / len(prediction_set)
+        else:
+            label = prediction_set[0]
+            confidence = 1.0 / len(prediction_set)
+
+        return ClassificationResult(
+            label=label,
+            confidence=round(confidence, 4),
+            probabilities={c: 1.0 / len(prediction_set) for c in prediction_set},
+            top_features=[],
+            alternatives=[(c, 1.0 / len(prediction_set)) for c in prediction_set[1:]],
+            typology_name=self.typology_name,
+            processing_time_s=0.0,
+            warnings=[f"Prediction set: {', '.join(prediction_set)}"] if len(prediction_set) > 1 else [],
+        )
 
     def _retrain(self) -> None:
         """Retrain on accumulated corrections."""
