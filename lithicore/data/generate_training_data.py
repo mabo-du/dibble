@@ -83,42 +83,49 @@ BORDES_RANGES = {
     "Scraper": {
         "length_mm": (30, 100), "width_mm": (20, 60), "thickness_mm": (5, 20),
         "elongation": (0.8, 2.0), "edge_angle_mean_deg": (60, 85),
+        "edge_angle_std_deg": (5, 15),  # continuous retouch → consistent edge
         "scar_count": (3, 10), "dorsal_ridge_count": (0, 2),
         "symmetry_score": (0.3, 0.6),
     },
     "Handaxe": {
         "length_mm": (80, 250), "width_mm": (50, 120), "thickness_mm": (20, 60),
         "elongation": (1.2, 2.2), "edge_angle_mean_deg": (50, 75),
+        "edge_angle_std_deg": (8, 20),
         "scar_count": (5, 20), "dorsal_ridge_count": (1, 3),
         "symmetry_score": (0.7, 0.95),
     },
     "Point": {
         "length_mm": (30, 100), "width_mm": (10, 35), "thickness_mm": (3, 12),
         "elongation": (1.5, 3.5), "edge_angle_mean_deg": (55, 80),
+        "edge_angle_std_deg": (5, 15),
         "scar_count": (2, 6), "dorsal_ridge_count": (1, 3),
         "symmetry_score": (0.6, 0.9),
     },
     "Burin": {
         "length_mm": (20, 80), "width_mm": (10, 30), "thickness_mm": (4, 15),
         "elongation": (1.0, 3.0), "edge_angle_mean_deg": (70, 90),
+        "edge_angle_std_deg": (3, 10),  # burin spall → very regular edge
         "scar_count": (1, 4), "dorsal_ridge_count": (0, 1),
         "symmetry_score": (0.3, 0.6),
     },
     "Denticulate": {
         "length_mm": (20, 70), "width_mm": (15, 45), "thickness_mm": (4, 15),
         "elongation": (0.8, 2.0), "edge_angle_mean_deg": (45, 65),
+        "edge_angle_std_deg": (15, 30),  # serrated → highly irregular edge
         "scar_count": (3, 8), "dorsal_ridge_count": (0, 1),
         "symmetry_score": (0.3, 0.6),
     },
     "Notched": {
         "length_mm": (20, 70), "width_mm": (15, 45), "thickness_mm": (4, 15),
         "elongation": (0.8, 2.0), "edge_angle_mean_deg": (50, 70),
+        "edge_angle_std_deg": (10, 22),  # one/two notches → moderately irregular
         "scar_count": (2, 5), "dorsal_ridge_count": (0, 1),
         "symmetry_score": (0.3, 0.6),
     },
     "Backed knife": {
         "length_mm": (40, 150), "width_mm": (15, 40), "thickness_mm": (3, 12),
         "elongation": (2.0, 4.0), "edge_angle_mean_deg": (60, 80),
+        "edge_angle_std_deg": (5, 15),
         "scar_count": (2, 5), "dorsal_ridge_count": (1, 2),
         "symmetry_score": (0.4, 0.7),
     },
@@ -199,6 +206,6 @@ def train_and_save(name: str, ranges: dict, n_per_class: int = 200) -> Path:
 if __name__ == "__main__":
     print("Generating pre-trained lithic classifier models...")
     train_and_save("basic", BASIC_RANGES, n_per_class=300)
-    train_and_save("bordes", BORDES_RANGES, n_per_class=200)
-    train_and_save("technological", TECH_RANGES, n_per_class=200)
+    train_and_save("bordes", BORDES_RANGES, n_per_class=300)
+    train_and_save("technological", TECH_RANGES, n_per_class=300)
     print("Done.")

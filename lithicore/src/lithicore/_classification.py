@@ -428,8 +428,10 @@ def train_model(
     y = np.array(labels)
     classes = sorted(set(labels))
 
+    # Increase tree depth for larger typologies (more classes need deeper trees)
+    depth = min(16, max(12, len(classes) * 2))
     base_rf = RandomForestClassifier(
-        n_estimators=500, max_depth=12,
+        n_estimators=500, max_depth=depth,
         min_samples_leaf=3, class_weight="balanced", random_state=42,
     )
     model = ClassifierModel(typology_name=typology_name)
