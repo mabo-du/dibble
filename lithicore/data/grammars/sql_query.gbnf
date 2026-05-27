@@ -1,0 +1,36 @@
+# GBNF grammar for DuckDB SELECT queries on lithic collection
+# Constrains LLM output to valid read-only SQL only.
+
+root ::= select-statement
+
+select-statement ::= "SELECT" select-list "FROM" table-name where-clause? order-clause? limit-clause? aggregate-clause? ";"
+
+select-list ::= "*" | column-name ("," column-name)* | aggregate-expr ("," aggregate-expr)*
+
+table-name ::= "artifacts"
+
+where-clause ::= "WHERE" condition ("AND" condition)*
+
+condition ::= column-name operator value
+
+operator ::= "=" | ">" | "<" | ">=" | "<=" | "!=" | "LIKE" | "IN"
+
+value ::= number | string-literal | list-literal
+
+number ::= [0-9]+ ("." [0-9]+)?
+
+string-literal ::= "'" [^']* "'"
+
+list-literal ::= "(" number ("," number)* ")"
+
+order-clause ::= "ORDER BY" column-name ("ASC" | "DESC")?
+
+limit-clause ::= "LIMIT" [1-9] [0-9]?
+
+aggregate-clause ::= "GROUP BY" column-name
+
+aggregate-expr ::= aggregate "(" column-name ")"
+
+aggregate ::= "AVG" | "COUNT" | "SUM" | "MIN" | "MAX"
+
+column-name ::= "length_mm" | "width_mm" | "thickness_mm" | "surface_area_mm2" | "volume_mm3" | "elongation" | "flatness" | "compactness" | "relative_thickness" | "scar_count" | "mean_scar_area_mm2" | "platform_angle_deg" | "edge_angle_mean_deg" | "edge_angle_std_deg" | "curvature_index" | "cross_section_profile" | "symmetry_score" | "com_z_ratio" | "dorsal_ridge_count" | "surface_roughness" | "typology" | "artefact_label"

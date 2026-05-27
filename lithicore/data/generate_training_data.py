@@ -82,66 +82,66 @@ BASIC_RANGES = {
 BORDES_RANGES = {
     "Scraper": {
         "length_mm": (30, 100), "width_mm": (20, 60), "thickness_mm": (5, 20),
-        "elongation": (0.8, 2.0), "edge_angle_mean_deg": (60, 85),
-        "edge_angle_std_deg": (5, 15),
-        "edge_angle_skewness": (-0.5, 0.5),   # symmetric, continuous retouch
-        "edge_angle_kurtosis": (-0.5, 1.0),   # uniform edge
-        "scar_count": (3, 10), "dorsal_ridge_count": (0, 2),
-        "symmetry_score": (0.3, 0.6),
+        "elongation": (0.8, 2.2), "edge_angle_mean_deg": (55, 85),
+        "edge_angle_std_deg": (5, 18),
+        "edge_angle_skewness": (-0.5, 0.8),
+        "edge_angle_kurtosis": (-0.5, 2.0),
+        "scar_count": (2, 10), "dorsal_ridge_count": (0, 2),
+        "symmetry_score": (0.3, 0.7),
     },
     "Handaxe": {
-        "length_mm": (80, 250), "width_mm": (50, 120), "thickness_mm": (20, 60),
-        "elongation": (1.2, 2.2), "edge_angle_mean_deg": (50, 75),
-        "edge_angle_std_deg": (8, 20),
-        "edge_angle_skewness": (-0.5, 0.5),
-        "edge_angle_kurtosis": (-0.5, 1.5),
-        "scar_count": (5, 20), "dorsal_ridge_count": (1, 3),
-        "symmetry_score": (0.7, 0.95),
+        "length_mm": (60, 250), "width_mm": (40, 120), "thickness_mm": (15, 60),
+        "elongation": (1.0, 2.5), "edge_angle_mean_deg": (45, 80),
+        "edge_angle_std_deg": (8, 22),
+        "edge_angle_skewness": (-0.5, 0.8),
+        "edge_angle_kurtosis": (-0.5, 2.5),
+        "scar_count": (3, 20), "dorsal_ridge_count": (1, 4),
+        "symmetry_score": (0.6, 0.95),
     },
     "Point": {
-        "length_mm": (30, 100), "width_mm": (10, 35), "thickness_mm": (3, 12),
-        "elongation": (1.5, 3.5), "edge_angle_mean_deg": (55, 80),
-        "edge_angle_std_deg": (4, 12),          # both edges similar → lower std
-        "edge_angle_skewness": (-0.3, 0.3),
-        "edge_angle_kurtosis": (-0.5, 1.0),
-        "scar_count": (2, 6), "dorsal_ridge_count": (1, 3),
-        "symmetry_score": (0.6, 0.9),
+        "length_mm": (25, 100), "width_mm": (10, 35), "thickness_mm": (3, 14),
+        "elongation": (1.5, 4.0), "edge_angle_mean_deg": (50, 80),
+        "edge_angle_std_deg": (4, 15),
+        "edge_angle_skewness": (-0.5, 0.5),
+        "edge_angle_kurtosis": (-0.5, 2.0),
+        "scar_count": (2, 7), "dorsal_ridge_count": (1, 3),
+        "symmetry_score": (0.5, 0.9),
     },
     "Burin": {
         "length_mm": (20, 80), "width_mm": (10, 30), "thickness_mm": (4, 15),
-        "elongation": (1.0, 3.0), "edge_angle_mean_deg": (75, 90),  # very steep
-        "edge_angle_std_deg": (2, 6),              # tight — clean burin spall
-        "edge_angle_skewness": (-0.2, 0.2),        # symmetric
-        "edge_angle_kurtosis": (-0.8, 0.3),        # very low kurtosis
-        "scar_count": (1, 4), "dorsal_ridge_count": (0, 1),
-        "symmetry_score": (0.3, 0.6),
+        "elongation": (1.0, 3.0), "edge_angle_mean_deg": (65, 90),
+        "edge_angle_std_deg": (3, 12),
+        "edge_angle_skewness": (-0.5, 0.5),
+        "edge_angle_kurtosis": (-0.8, 1.5),
+        "scar_count": (1, 5), "dorsal_ridge_count": (0, 2),
+        "symmetry_score": (0.3, 0.7),
     },
     "Denticulate": {
         "length_mm": (20, 70), "width_mm": (15, 45), "thickness_mm": (4, 15),
-        "elongation": (0.8, 2.0), "edge_angle_mean_deg": (45, 65),
-        "edge_angle_std_deg": (15, 30),
-        "edge_angle_skewness": (0.5, 2.0),    # many low + a few very steep = high +skew
-        "edge_angle_kurtosis": (3.0, 8.0),    # outliers from deep notches
-        "scar_count": (3, 8), "dorsal_ridge_count": (0, 1),
-        "symmetry_score": (0.3, 0.6),
+        "elongation": (0.8, 2.0), "edge_angle_mean_deg": (40, 70),
+        "edge_angle_std_deg": (12, 30),
+        "edge_angle_skewness": (0.3, 2.5),
+        "edge_angle_kurtosis": (1.5, 8.0),
+        "scar_count": (2, 8), "dorsal_ridge_count": (0, 2),
+        "symmetry_score": (0.3, 0.7),
     },
     "Notched": {
         "length_mm": (20, 70), "width_mm": (15, 45), "thickness_mm": (4, 15),
-        "elongation": (0.8, 2.0), "edge_angle_mean_deg": (50, 70),
-        "edge_angle_std_deg": (10, 22),
-        "edge_angle_skewness": (0.0, 1.0),    # one/two notches → moderate skew
-        "edge_angle_kurtosis": (1.0, 4.0),    # moderate outliers
-        "scar_count": (2, 5), "dorsal_ridge_count": (0, 1),
-        "symmetry_score": (0.3, 0.6),
+        "elongation": (0.8, 2.0), "edge_angle_mean_deg": (45, 75),
+        "edge_angle_std_deg": (8, 24),
+        "edge_angle_skewness": (-0.3, 1.5),
+        "edge_angle_kurtosis": (0.5, 5.0),
+        "scar_count": (2, 6), "dorsal_ridge_count": (0, 2),
+        "symmetry_score": (0.3, 0.7),
     },
     "Backed knife": {
-        "length_mm": (40, 150), "width_mm": (15, 40), "thickness_mm": (3, 12),
-        "elongation": (2.0, 4.0), "edge_angle_mean_deg": (60, 80),
-        "edge_angle_std_deg": (12, 22),          # bimodal (low cutting + high backed edge)
-        "edge_angle_skewness": (0.3, 1.5),       # positively skewed (one steep side)
-        "edge_angle_kurtosis": (1.0, 4.0),       # moderate outliers
-        "scar_count": (2, 5), "dorsal_ridge_count": (1, 2),
-        "symmetry_score": (0.4, 0.7),
+        "length_mm": (35, 150), "width_mm": (12, 40), "thickness_mm": (3, 14),
+        "elongation": (1.8, 4.5), "edge_angle_mean_deg": (55, 85),
+        "edge_angle_std_deg": (8, 24),
+        "edge_angle_skewness": (0.0, 1.8),
+        "edge_angle_kurtosis": (0.5, 5.0),
+        "scar_count": (2, 6), "dorsal_ridge_count": (1, 3),
+        "symmetry_score": (0.3, 0.8),
     },
 }
 
@@ -150,20 +150,17 @@ BORDES_RANGES = {
 TECH_RANGES = {
     "Primary": {
         "length_mm": (30, 120), "width_mm": (20, 80), "thickness_mm": (8, 30),
-        "elongation": (0.8, 2.0), "scar_count": (0, 1),
-        "edge_angle_mean_deg": (40, 60),  # cortical → low edge refinement
+        "elongation": (0.8, 2.0), "scar_count": (0, 2),
         "surface_roughness": (0.7, 1.0),
     },
     "Secondary": {
         "length_mm": (20, 100), "width_mm": (15, 60), "thickness_mm": (5, 25),
-        "elongation": (0.8, 2.0), "scar_count": (1, 2),
-        "edge_angle_mean_deg": (45, 65),
+        "elongation": (0.8, 2.0), "scar_count": (1, 3),
         "surface_roughness": (0.5, 0.9),
     },
     "Tertiary": {
         "length_mm": (15, 80), "width_mm": (10, 50), "thickness_mm": (3, 15),
-        "elongation": (0.8, 2.5), "scar_count": (3, 6),
-        "edge_angle_mean_deg": (50, 75),  # more retouch → higher edge angle
+        "elongation": (0.8, 2.5), "scar_count": (2, 6),
         "surface_roughness": (0.3, 0.7),
     },
     "Crested blade": {
@@ -181,7 +178,7 @@ TECH_RANGES = {
 }
 
 
-def generate_samples(ranges: dict, n_per_class: int = 200, noise: float = 0.12):
+def generate_samples(ranges: dict, n_per_class: int = 200, noise: float = 0.15):
     """Generate synthetic feature vectors with Gaussian noise."""
     features = []
     labels = []
@@ -222,7 +219,7 @@ def train_and_save(name: str, ranges: dict, n_per_class: int = 200) -> Path:
 
 if __name__ == "__main__":
     print("Generating pre-trained lithic classifier models...")
-    train_and_save("basic", BASIC_RANGES, n_per_class=300)
+    train_and_save("basic", BASIC_RANGES, n_per_class=500)
     train_and_save("bordes", BORDES_RANGES, n_per_class=500)
     train_and_save("technological", TECH_RANGES, n_per_class=500)
     print("Done.")

@@ -29,7 +29,7 @@ from generate_training_data import (  # noqa: E402
     BASIC_RANGES, BORDES_RANGES, TECH_RANGES, generate_samples,
 )
 
-BENCHMARK_DIR = Path(__file__).resolve().parent.parent / "docs" / "benchmark"
+BENCHMARK_DIR = Path(__file__).resolve().parent.parent.parent / "docs" / "benchmark"
 RESULTS_DIR = BENCHMARK_DIR / "results"
 
 
