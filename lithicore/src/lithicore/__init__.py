@@ -28,6 +28,9 @@ try:
         Landmark,
         MeshQualityReport,
         MeshGrade,
+        ClassificationResult,
+        FeatureImportance,
+        LithicFeatureVector,
     )
     from lithicore._orientation import orient_auto, orient_manual
     from lithicore._metrics import extract_metrics
@@ -66,6 +69,12 @@ try:
         Annotation,
         AnnotationSet,
     )
+    from lithicore._classification import (
+        ClassifierModel,
+        extract_features,
+        train_model,
+        extract_diagnostic_coordinates,
+    )
 
     __all__ = [
         "MeasurementConfig", "MeasurementResult", "ArtefactResult", "Landmark",
@@ -84,6 +93,9 @@ try:
         "PreprocessingConfig", "PreprocessingResult",
         "preprocess_photos", "compute_laplacian_variance", "compute_blur_scores",
         "Annotation", "AnnotationSet",
+        "ClassificationResult", "FeatureImportance", "LithicFeatureVector",
+        "ClassifierModel", "extract_features", "train_model",
+        "extract_diagnostic_coordinates",
     ]
 except ImportError as _exc:
     # Forward reference — all modules exist since Phases 2-4
