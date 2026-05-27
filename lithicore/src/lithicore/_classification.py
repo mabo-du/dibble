@@ -28,7 +28,7 @@ from lithicore._models import (
 )
 
 # Pre-trained model paths
-MODEL_DIR = Path(__file__).resolve().parent.parent / "data" / "models"
+MODEL_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "models"
 
 TYPOLOGIES: dict[str, dict] = {
     "basic": {
@@ -324,7 +324,7 @@ class ClassifierModel:
 
         # Feature importances
         if hasattr(self._model, "calibrated_classifiers_"):
-            importances = self._model.calibrated_classifiers_[0].base_estimator.feature_importances_
+            importances = self._model.calibrated_classifiers_[0].estimator.feature_importances_
         else:
             importances = self._model.feature_importances_
 
