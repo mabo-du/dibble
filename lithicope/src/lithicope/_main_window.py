@@ -19,7 +19,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QMainWindow, QMenuBar, QStatusBar, QSplitter, QWidget,
     QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFileDialog,
-    QMessageBox, QSlider,
+    QMessageBox, QSlider, QTabWidget,
 )
 from PyQt6.QtGui import QAction
 
@@ -30,6 +30,10 @@ from lithicope._results_panel import ResultsPanel
 from lithicope._batch_runner import BatchRunner
 from lithicope._photogrammetry_dialog import PhotogrammetryDialog
 from lithicope._batch_photogrammetry import BatchPhotogrammetryDialog
+from lithicope._annotation_panel import AnnotationPanel
+
+import cv2
+from datetime import datetime
 
 
 class MainWindow(QMainWindow):
@@ -77,13 +81,24 @@ class MainWindow(QMainWindow):
         self._compare_widget.setVisible(False)
         splitter.addWidget(self._compare_widget)
 
-        # Right: results panel
+        # Right: tabbed results + annotations
         self.results_panel = ResultsPanel()
         self.results_panel.export_requested.connect(self._on_export)
-        splitter.addWidget(self.results_panel)
+        self._right_tabs = QTabWidget()
+        self._right_tabs.addTab(self.results_panel, "Results")
+        self._annotation_panel = AnnotationPanel()
+        self._right_tabs.addTab(self._annotation_panel, "Annotations")
+        splitter.addWidget(self._right_tabs)
 
         splitter.setSizes([660, 60, 480])
         self.setCentralWidget(splitter)
+
+        # Wire annotation signals
+        self._annotation_panel.focus_requested.connect(self.viewer.focus_on_point)
+        self._annotation_panel.placement_mode_requested.connect(self._on_annotation_placement)
+        self._annotation_panel.capture_photo_requested.connect(self._on_annotation_capture_photo)
+        self._annotation_panel.annotation_added.connect(lambda _: self._sync_annotation_viewer())
+        self._annotation_panel.annotation_deleted.connect(lambda _: self._sync_annotation_viewer())
 
     def _init_menu(self) -> None:
         menu = self.menuBar()
@@ -177,6 +192,24 @@ class MainWindow(QMainWindow):
         clear_scar_action = QAction("&Clear Scar Overlay", self)
         clear_scar_action.triggered.connect(self._on_clear_scars)
         tools_menu.addAction(clear_scar_action)
+
+        # Annotations
+        tools_menu.addSeparator()
+        ann_menu = tools_menu.addMenu("&Annotations")
+        add_ann_action = QAction("&Add Annotation", self)
+        add_ann_action.setShortcut("Ctrl+Shift+A")
+        add_ann_action.triggered.connect(self._on_annotation_placement)
+        ann_menu.addAction(add_ann_action)
+        import_ann_action = QAction("&Import from JSON...", self)
+        import_ann_action.triggered.connect(self._annotation_panel._on_import)
+        ann_menu.addAction(import_ann_action)
+        export_ann_action = QAction("&Export to JSON...", self)
+        export_ann_action.setShortcut("Ctrl+S")
+        export_ann_action.triggered.connect(self._annotation_panel._on_export)
+        ann_menu.addAction(export_ann_action)
+        merge_ann_action = QAction("&Merge Annotation Set...", self)
+        merge_ann_action.triggered.connect(self._annotation_panel._on_merge)
+        ann_menu.addAction(merge_ann_action)
 
         # Help menu
         help_menu = menu.addMenu("&Help")
@@ -337,6 +370,9 @@ class MainWindow(QMainWindow):
             self._current_results = measurements
             self.viewer.display_mesh(oriented, edge_vertices)
             self.results_panel.show_measurements(measurements, path.name, quality.grade)
+            # Set annotation working directory
+            if hasattr(self, '_annotation_panel'):
+                self._annotation_panel.set_annotation_dir(path.parent)
             self.status.showMessage(f"Loaded: {path.name}")
         except Exception as exc:
             QMessageBox.critical(self, "Error", f"Failed to process mesh:\n{exc}")
@@ -602,3 +638,39 @@ class MainWindow(QMainWindow):
         """Remove scar overlay and restore default mesh appearance."""
         self.viewer.clear_scar_overlay()
         self.status.showMessage("Scar overlay cleared")
+
+    # ── Annotation handlers ──
+
+    def _on_annotation_placement(self) -> None:
+        """Enter annotation placement mode in the viewer."""
+        self._right_tabs.setCurrentIndex(1)  # Switch to Annotations tab
+        self.viewer.enable_annotation_placement_mode(
+            callback=self._on_annotation_placed
+        )
+        self.status.showMessage("Click on the mesh to place an annotation")
+
+    def _on_annotation_placed(self, x: float, y: float, z: float) -> None:
+        """Called when user clicks a point on the mesh in placement mode."""
+        self.viewer.disable_annotation_placement_mode()
+        self._annotation_panel.add_annotation((x, y, z))
+        self._sync_annotation_viewer()
+        self.status.showMessage(f"Annotation placed at ({x:.1f}, {y:.1f}, {z:.1f})")
+
+    def _sync_annotation_viewer(self) -> None:
+        """Sync annotations from panel to viewer display."""
+        annotations = self._annotation_panel.get_annotations()
+        mode = self._annotation_panel.get_display_mode()
+        self.viewer._annotation_display_mode = mode
+        self.viewer.refresh_annotations(annotations)
+
+    def _on_annotation_capture_photo(self) -> None:
+        """Capture the current 3D view and attach to the selected annotation."""
+        if not hasattr(self.viewer, 'plotter'):
+            return
+        screenshot = self.viewer.plotter.screenshot(return_img=True)
+        ann_dir = getattr(self._annotation_panel, '_annotation_dir', Path.home())
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        photo_path = ann_dir / f"annotation_capture_{timestamp}.png"
+        cv2.imwrite(str(photo_path), cv2.cvtColor(screenshot, cv2.COLOR_RGBA2BGR))
+        self._annotation_panel.add_captured_photo(str(photo_path))
+        self.status.showMessage(f"Photo captured: {photo_path.name}")
