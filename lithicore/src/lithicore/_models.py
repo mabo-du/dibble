@@ -1,12 +1,13 @@
 """_models.py — Core data types for lithicore measurement pipeline.
 
-exports: MeasurementConfig, MeasurementResult, ArtefactResult, Landmark, MeshQualityReport, MeshGrade, FeatureImportance, ClassificationResult
+exports: MeasurementConfig, MeasurementResult, ArtefactResult, Landmark, MeshQualityReport, MeshGrade, FeatureImportance, ClassificationResult, LithicFeatureVector
 used_by: Every lithicore module imports these dataclasses
 rules:   All dataclasses frozen except ClassificationResult (mutable container).
          MeasurementResult.confidence is 0.0-1.0.
          MeshGrade is a StrEnum (Pass, Warn, Fail).
 agent:   deepseek-v4-flash | 2026-05-26 | Initial data model
 agent:   deepseek-v4-flash | 2026-05-27 | Added FeatureImportance and ClassificationResult dataclasses
+agent:   deepseek-v4-flash | 2026-05-27 | Added LithicFeatureVector with to_array() and from_array()
 """
 
 from __future__ import annotations
@@ -14,7 +15,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
-from typing import List
+from typing import ClassVar, List
+
+import numpy as np
 
 
 class MeshGrade(StrEnum):
@@ -102,3 +105,54 @@ class ClassificationResult:
     typology_name: str  # e.g. "basic", "bordes", "technological", "custom"
     processing_time_s: float
     warnings: list[str]
+
+
+@dataclass
+class LithicFeatureVector:
+    """Numerical fingerprint of a lithic artefact (20+ dimensional feature vector).
+
+    All measurements in mm or mm²/mm³. Computed from an oriented mesh.
+    """
+    # Raw metrics
+    length_mm: float = 0.0
+    width_mm: float = 0.0
+    thickness_mm: float = 0.0
+    surface_area_mm2: float = 0.0
+    volume_mm3: float = 0.0
+
+    # Derived ratios
+    elongation: float = 0.0       # L/W
+    flatness: float = 0.0         # W/T
+    compactness: float = 0.0      # V/L³
+    relative_thickness: float = 0.0  # T/L
+
+    # Morphological features
+    scar_count: int = 0
+    mean_scar_area_mm2: float = 0.0
+    platform_angle_deg: float = 0.0
+    edge_angle_mean_deg: float = 0.0
+    edge_angle_std_deg: float = 0.0
+    curvature_index: float = 0.0
+    cross_section_profile: float = 0.0  # 0=flat, 1=triangular, 2=round
+    symmetry_score: float = 0.0
+    com_z_ratio: float = 0.0
+    dorsal_ridge_count: int = 0
+    surface_roughness: float = 0.0
+
+    FEATURE_NAMES: ClassVar[list[str]] = [
+        "length_mm", "width_mm", "thickness_mm", "surface_area_mm2", "volume_mm3",
+        "elongation", "flatness", "compactness", "relative_thickness",
+        "scar_count", "mean_scar_area_mm2", "platform_angle_deg",
+        "edge_angle_mean_deg", "edge_angle_std_deg", "curvature_index",
+        "cross_section_profile", "symmetry_score", "com_z_ratio",
+        "dorsal_ridge_count", "surface_roughness",
+    ]
+
+    def to_array(self) -> np.ndarray:
+        """Return feature vector as a 1D numpy array in FEATURE_NAMES order."""
+        return np.array([getattr(self, name) for name in self.FEATURE_NAMES], dtype=float)
+
+    @classmethod
+    def from_array(cls, arr: np.ndarray) -> LithicFeatureVector:
+        """Construct from a 20-element array in FEATURE_NAMES order."""
+        return cls(**dict(zip(cls.FEATURE_NAMES, arr)))
