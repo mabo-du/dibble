@@ -33,6 +33,7 @@ from lithicope._photogrammetry_dialog import PhotogrammetryDialog
 from lithicope._batch_photogrammetry import BatchPhotogrammetryDialog
 from lithicope._annotation_panel import AnnotationPanel
 from lithicope._classification_panel import ClassificationPanel
+from lithicope._assistant_panel import AssistantPanel
 
 import cv2
 from datetime import datetime
@@ -92,6 +93,8 @@ class MainWindow(QMainWindow):
         self._right_tabs.addTab(self._annotation_panel, "Annotations")
         self._classification_panel = ClassificationPanel()
         self._right_tabs.addTab(self._classification_panel, "Classification")
+        self._assistant_panel = AssistantPanel()
+        self._right_tabs.addTab(self._assistant_panel, "Assistant")
         splitter.addWidget(self._right_tabs)
 
         splitter.setSizes([660, 60, 480])
@@ -226,6 +229,14 @@ class MainWindow(QMainWindow):
         classify_action.setShortcut("Ctrl+Shift+C")
         classify_action.triggered.connect(self._classification_panel._on_classify)
         class_menu.addAction(classify_action)
+
+        # Assistant submenu
+        tools_menu.addSeparator()
+        asst_menu = tools_menu.addMenu("&Assistant")
+        open_asst_action = QAction("&Open Assistant", self)
+        open_asst_action.setShortcut("Ctrl+Shift+A")
+        open_asst_action.triggered.connect(self._on_open_assistant)
+        asst_menu.addAction(open_asst_action)
 
         # Help menu
         help_menu = menu.addMenu("&Help")
@@ -386,6 +397,16 @@ class MainWindow(QMainWindow):
 
             self._current_mesh_path = path
             self._current_results = measurements
+            # Build collection DataFrame for AI assistant
+            if self._current_results is not None:
+                import pandas as pd
+                row = {}
+                for m in self._current_results:
+                    row[m.name] = m.value
+                row["artefact_label"] = path.stem
+                # Add typology if classified
+                df_class = pd.DataFrame([row])
+                self._assistant_panel.set_collection(df_class)
             self._current_mesh = oriented
             self.viewer.display_mesh(oriented, edge_vertices)
             # Feed mesh to classification panel for potential auto-classify
@@ -706,3 +727,9 @@ class MainWindow(QMainWindow):
         cv2.imwrite(str(photo_path), cv2.cvtColor(screenshot, cv2.COLOR_RGBA2BGR))
         self._annotation_panel.add_captured_photo(str(photo_path))
         self.status.showMessage(f"Photo captured: {photo_path.name}")
+
+    def _on_open_assistant(self) -> None:
+        """Switch to the Assistant tab."""
+        self._right_tabs.setCurrentIndex(
+            self._right_tabs.indexOf(self._assistant_panel)
+        )
