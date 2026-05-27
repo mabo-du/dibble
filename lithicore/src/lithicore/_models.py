@@ -132,6 +132,8 @@ class LithicFeatureVector:
     platform_angle_deg: float = 0.0
     edge_angle_mean_deg: float = 0.0
     edge_angle_std_deg: float = 0.0
+    edge_angle_skewness: float = 0.0   # asymmetry of edge angle distribution
+    edge_angle_kurtosis: float = 0.0   # tailedness (outlier sensitivity)
     curvature_index: float = 0.0
     cross_section_profile: float = 0.0  # 0=flat, 1=triangular, 2=round
     symmetry_score: float = 0.0
@@ -143,7 +145,9 @@ class LithicFeatureVector:
         "length_mm", "width_mm", "thickness_mm", "surface_area_mm2", "volume_mm3",
         "elongation", "flatness", "compactness", "relative_thickness",
         "scar_count", "mean_scar_area_mm2", "platform_angle_deg",
-        "edge_angle_mean_deg", "edge_angle_std_deg", "curvature_index",
+        "edge_angle_mean_deg", "edge_angle_std_deg",
+        "edge_angle_skewness", "edge_angle_kurtosis",
+        "curvature_index",
         "cross_section_profile", "symmetry_score", "com_z_ratio",
         "dorsal_ridge_count", "surface_roughness",
     ]
@@ -154,7 +158,7 @@ class LithicFeatureVector:
 
     @classmethod
     def from_array(cls, arr: np.ndarray) -> LithicFeatureVector:
-        """Construct from a 20-element array in FEATURE_NAMES order."""
+        """Construct from a 22-element array in FEATURE_NAMES order."""
         return cls(**dict(zip(cls.FEATURE_NAMES, arr)))
 
 

@@ -31,10 +31,10 @@ class TestExtractFeatures:
         assert isinstance(fv, LithicFeatureVector)
         assert fv.length_mm > 0
 
-    def test_feature_vector_has_20_features(self, blade_mesh):
+    def test_feature_vector_has_22_features(self, blade_mesh):
         fv = extract_features(blade_mesh)
         arr = fv.to_array()
-        assert len(arr) == 20
+        assert len(arr) == 22
 
     def test_feature_vector_no_nan(self, blade_mesh):
         fv = extract_features(blade_mesh)

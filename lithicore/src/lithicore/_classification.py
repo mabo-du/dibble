@@ -99,6 +99,10 @@ def extract_features(mesh: trimesh.Trimesh) -> LithicFeatureVector:
     edge_angles = _compute_edge_angles(mesh)
     edge_angle_mean = float(np.mean(edge_angles)) if len(edge_angles) > 0 else 0.0
     edge_angle_std = float(np.std(edge_angles)) if len(edge_angles) > 1 else 0.0
+    # Higher-order edge statistics — key for separating denticulate/notched/scraper
+    from scipy.stats import skew as scipy_skew, kurtosis as scipy_kurtosis
+    edge_angle_skewness = float(scipy_skew(edge_angles)) if len(edge_angles) > 2 else 0.0
+    edge_angle_kurtosis = float(scipy_kurtosis(edge_angles)) if len(edge_angles) > 2 else 0.0
 
     # ── Curvature ──
     curvature_index = _compute_curvature_index(mesh)
@@ -134,6 +138,8 @@ def extract_features(mesh: trimesh.Trimesh) -> LithicFeatureVector:
         platform_angle_deg=round(platform_angle_deg, 1),
         edge_angle_mean_deg=round(edge_angle_mean, 1),
         edge_angle_std_deg=round(edge_angle_std, 1),
+        edge_angle_skewness=round(edge_angle_skewness, 3),
+        edge_angle_kurtosis=round(edge_angle_kurtosis, 3),
         curvature_index=round(curvature_index, 4),
         cross_section_profile=round(cross_section, 2),
         symmetry_score=round(symmetry, 4),
