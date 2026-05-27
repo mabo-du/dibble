@@ -200,7 +200,7 @@ including confusion matrices and per-class precision/recall/F1 scores.*
 If you use Dibble in published research, please cite the software:
 
 ```
-Quinn, M. (2026). Dibble: Digital Image-Based Benchmark for Lithic Evaluation
+Bouck, M. (2026). Dibble: Digital Image-Based Benchmark for Lithic Evaluation
 (Version 4.0) [Computer software]. https://github.com/mabo-du/dibble
 ```
 
