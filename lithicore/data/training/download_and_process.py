@@ -32,9 +32,10 @@ PROCESSED_DIR = Path(__file__).resolve().parent / "processed"
 # Dataset definitions
 DATASETS = [
     {
-        "name": "Fumane Cave (Vol 1)",
-        "csv_file": RAW_DIR / "RF_3D_Dataset.csv",
-        "zip_url": "https://zenodo.org/api/records/15131708/files/RF_3D_Meshes.zip/content",
+        "name": "Fumane Cave (Vol 1, v3.0.1)",
+        "csv_file": RAW_DIR / "Fumane_3D_metadata.csv",
+        "csv_fallback": RAW_DIR / "RF_3D_Dataset.csv",
+        "zip_url": "https://zenodo.org/api/records/15382869/files/RF_3D_Meshes.zip/content",
         "zip_file": RAW_DIR / "RF_3D_Meshes.zip",
         "mesh_prefix": "RF_3D_Meshes",
         "id_prefix": "RF",
@@ -43,6 +44,7 @@ DATASETS = [
     {
         "name": "Castelcivita (Vol 2)",
         "csv_file": RAW_DIR / "CTC_3D_Dataset.csv",
+        "csv_fallback": RAW_DIR / "CTC_3D_Dataset.csv",
         "zip_url": "https://zenodo.org/api/records/10631390/files/CTC_3D_Meshes.zip/content",
         "zip_file": RAW_DIR / "CTC_3D_Meshes.zip",
         "mesh_prefix": "CTC_3D_Meshes",
