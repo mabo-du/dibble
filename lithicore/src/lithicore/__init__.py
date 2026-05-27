@@ -55,6 +55,17 @@ try:
         detect_scale_aruco,
         apply_scale_to_mesh,
     )
+    from lithicore._photo_preprocessing import (
+        PreprocessingConfig,
+        PreprocessingResult,
+        preprocess_photos,
+        compute_laplacian_variance,
+        compute_blur_scores,
+    )
+    from lithicore._annotations import (
+        Annotation,
+        AnnotationSet,
+    )
 
     __all__ = [
         "MeasurementConfig", "MeasurementResult", "ArtefactResult", "Landmark",
@@ -70,6 +81,9 @@ try:
         "run_pipeline", "colmap_available", "clean_point_cloud",
         "ProgressCallback",
         "ScaleResult", "detect_scale_aruco", "apply_scale_to_mesh",
+        "PreprocessingConfig", "PreprocessingResult",
+        "preprocess_photos", "compute_laplacian_variance", "compute_blur_scores",
+        "Annotation", "AnnotationSet",
     ]
 except ImportError as _exc:
     # Forward reference — all modules exist since Phases 2-4
