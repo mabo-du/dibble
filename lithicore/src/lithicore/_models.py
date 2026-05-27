@@ -1,11 +1,12 @@
 """_models.py — Core data types for lithicore measurement pipeline.
 
-exports: MeasurementConfig, MeasurementResult, ArtefactResult, Landmark, MeshQualityReport, MeshGrade
+exports: MeasurementConfig, MeasurementResult, ArtefactResult, Landmark, MeshQualityReport, MeshGrade, FeatureImportance, ClassificationResult
 used_by: Every lithicore module imports these dataclasses
-rules:   All dataclasses frozen, with typed fields.
+rules:   All dataclasses frozen except ClassificationResult (mutable container).
          MeasurementResult.confidence is 0.0-1.0.
          MeshGrade is a StrEnum (Pass, Warn, Fail).
 agent:   deepseek-v4-flash | 2026-05-26 | Initial data model
+agent:   deepseek-v4-flash | 2026-05-27 | Added FeatureImportance and ClassificationResult dataclasses
 """
 
 from __future__ import annotations
@@ -78,3 +79,26 @@ class ArtefactResult:
     measurements: List[MeasurementResult]
     landmarks: List[Landmark]
     warnings: List[str]
+
+
+@dataclass(frozen=True)
+class FeatureImportance:
+    """A single feature's contribution to a classification decision."""
+    name: str
+    value: float
+    contribution_pct: float  # % of trees that split on this feature
+    expected_range: tuple[float, float]  # typical range for the predicted class
+    passed: bool  # whether value falls within expected range
+
+
+@dataclass
+class ClassificationResult:
+    """Result of a typology classification pipeline run."""
+    label: str
+    confidence: float
+    probabilities: dict[str, float]  # class -> probability
+    top_features: list[FeatureImportance]
+    alternatives: list[tuple[str, float]]  # (label, confidence) for other classes
+    typology_name: str  # e.g. "basic", "bordes", "technological", "custom"
+    processing_time_s: float
+    warnings: list[str]
