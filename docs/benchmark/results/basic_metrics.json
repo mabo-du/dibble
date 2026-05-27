@@ -1,0 +1,89 @@
+{
+  "name": "basic",
+  "display_name": "Basic Morphological",
+  "n_classes": 5,
+  "n_test_samples": 500,
+  "accuracy": 0.978,
+  "per_class": [
+    {
+      "class": "Blade",
+      "precision": 0.99,
+      "recall": 1.0,
+      "f1": 0.995,
+      "support": 100
+    },
+    {
+      "class": "Bladelet",
+      "precision": 1.0,
+      "recall": 0.99,
+      "f1": 0.995,
+      "support": 100
+    },
+    {
+      "class": "Core",
+      "precision": 1.0,
+      "recall": 0.98,
+      "f1": 0.99,
+      "support": 100
+    },
+    {
+      "class": "Flake",
+      "precision": 0.979,
+      "recall": 0.94,
+      "f1": 0.959,
+      "support": 100
+    },
+    {
+      "class": "Tool",
+      "precision": 0.925,
+      "recall": 0.98,
+      "f1": 0.951,
+      "support": 100
+    }
+  ],
+  "confusion_matrix": [
+    [
+      100,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      1,
+      99,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      98,
+      0,
+      2
+    ],
+    [
+      0,
+      0,
+      0,
+      94,
+      6
+    ],
+    [
+      0,
+      0,
+      0,
+      2,
+      98
+    ]
+  ],
+  "classes": [
+    "Blade",
+    "Bladelet",
+    "Core",
+    "Flake",
+    "Tool"
+  ],
+  "classification_report": "              precision    recall  f1-score   support\n\n       Blade       0.99      1.00      1.00       100\n    Bladelet       1.00      0.99      0.99       100\n        Core       1.00      0.98      0.99       100\n       Flake       0.98      0.94      0.96       100\n        Tool       0.92      0.98      0.95       100\n\n    accuracy                           0.98       500\n   macro avg       0.98      0.98      0.98       500\nweighted avg       0.98      0.98      0.98       500\n"
+}

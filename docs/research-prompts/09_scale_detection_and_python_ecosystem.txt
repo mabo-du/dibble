@@ -1,0 +1,179 @@
+Project: Lithic-Analysis-Platform (Dibble)
+Source: Research gap analysis prompt (generated)
+======================================================================
+
+CONTEXT:
+This prompt addresses two gaps identified in a comprehensive literature
+review of computational lithic analysis (the "Lithic Analysis Software
+Research" paper in docs/research-papers/):
+
+GAP 1: The paper extensively discusses photogrammetry pipelines for
+lithic documentation, including camera settings, lighting, turntables,
+and cross-polarisation. However, it treats scale bars as "mandatory"
+and assumes the user manually sets the scale in photogrammetry software
+(e.g., Agisoft Metashape's scale bars). There is no discussion of
+automated scale detection — i.e., software that detects the scale
+reference in photos and automatically rescales the resulting 3D mesh
+to real-world units without manual intervention. This is precisely
+what Dibble v3.5 aims to implement.
+
+GAP 2: The paper's software ecosystem analysis covers PyLithics (2D
+image-based, Python), Lithics3D (3D, R), and Artifact3-D/AGMT3-D (3D,
+MATLAB). It identifies a significant community problem: LLMs (like
+ChatGPT) generate bad archaeological code because they lack domain
+logic. However, it does not analyse the emerging Python 3D ecosystem
+(mesh libraries, photogrammetry bindings, computer vision tools) as
+an alternative to R/MATLAB. Dibble is Python-first, and this research
+should validate whether Python is now mature enough to replace the
+R/MATLAB workflow for lithic analysis.
+
+======================================================================
+
+DEEP RESEARCH PROMPT:
+
+I need technical research on two topics:
+
+## TOPIC 1: Automated Scale Detection in Photogrammetry
+
+The literature on close-range photogrammetry for small objects
+(archaeological artefacts, fossils, museum specimens) universally
+treats scale as a manual step: the user photographs a scale bar, then
+sets the known length in post-processing software. I need to know
+whether any existing tools, libraries, or research projects have
+implemented automatic scale detection.
+
+Specifically:
+
+### 1a. Existing implementations
+
+- Does any current photogrammetry software (Agisoft Metashape,
+  RealityCapture, 3DF Zephyr, Meshroom, COLMAP, OpenDroneMap,
+  Regard3D, MicMac) have an automated scale detection feature?
+- If so, how does it work? What computer vision techniques does it
+  use? What accuracy does it claim?
+- Are there any research papers specifically addressing automated
+  scale detection in SfM/MVS pipelines?
+- Are there any open-source GitHub repositories or scripts that
+  attempt this?
+
+### 1b. Related computer vision research
+
+- Automatic ruler/scale bar detection in medical imaging (surgical
+  photos, wound measurement) — this is a closely related problem
+  where automated scale detection is more developed
+- Fiducial marker systems used in other fields for automatic scaling
+  (ArUco, AprilTag, checkerboard patterns in robotics, AR/VR)
+- Any papers on "metric scale recovery" or "absolute scale estimation"
+  in monocular SfM — this is the broader computer vision problem
+- Techniques that use known camera sensor size + EXIF data for scale
+  recovery (often called "prior-based" or "known camera" SfM)
+
+### 1c. Sensor database and EXIF approaches
+
+- Comprehensive list of camera sensor databases (open-source or
+  proprietary) that map camera model → sensor width in mm
+- COLMAP's built-in CameraDatabase: what models are covered? How
+  is it queried?
+- Python libraries for reading EXIF focal length data (exiftool,
+  Pillow, rawpy)
+- Accuracy of smartphone EXIF data vs DSLR EXIF data for focal
+  length reporting
+- Does computational photography (multi-lens smartphones, computational
+  zoom) invalidate EXIF-based approaches?
+
+### 1d. Complementary approaches in adjacent fields
+
+- How do museum 3D scanning pipelines handle scale? (Smithsonian,
+  British Museum, Sketchfab)
+- How do forensic photogrammetry tools handle scale?
+- How do dental/medical photogrammetry scanners handle scale?
+- How does photogrammetric insect/ botanical specimen digitisation
+  handle scale? (e.g., National Museum of Natural History's
+  digitisation pipelines)
+
+## TOPIC 2: Python Ecosystem for 3D Lithic Analysis vs R/MATLAB
+
+The academic lithic analysis software ecosystem is dominated by
+R (Lithics3D) and MATLAB (Artifact3-D, AGMT3-D). The research paper
+identifies that "LLMs frequently hallucinate outdated syntax, invent
+non-existent analytical modules, and lack domain logic" — but it does
+not examine whether the modern Python 3D ecosystem has matured enough
+to support a production lithic analysis application.
+
+Specifically:
+
+### 2a. Python mesh processing maturity
+
+- Compare the Python 3D processing ecosystem (trimesh, Open3D,
+  PyVista, PyMesh, pymeshlab, meshio, napari) against the R mesh
+  ecosystem (rgl, Rvcg, Morpho, mesheR, LiTo)
+- Python libraries with direct equivalents to Lithics3D functions:
+  - Shortest-path across mesh vertices with curvature-weighted edges
+    (Lithics3D uses igraph) — can this be done in Python with
+    networkx + trimesh or Open3D?
+  - Surface path routing along ridges
+  - Plane-mesh intersections, spherical projections
+  - Flake scar segmentation and watershed algorithms
+- Python libraries with direct equivalents to Artifact3-D/AGMT3-D:
+  - Principal Component Analysis on surface normals for orientation
+  - Centre of mass calculation for oriented meshes
+  - Geometric morphometric landmark handling
+  - Procrustes superimposition (geomorph in R; equivalent in Python?)
+- Available Python libraries for geometric morphometrics that could
+  replace MorphoJ or geomorph
+
+### 2b. Computational geometry benchmarks
+
+- Performance comparison: is Python (NumPy + trimesh + SciPy) fast
+  enough for batch processing of 100+ lithic meshes, or does it
+  require C++ acceleration?
+- Where are the bottlenecks in Python mesh processing?
+- Are there Python bindings for CGAL (Computational Geometry
+  Algorithms Library) that could accelerate lithic-specific
+  operations?
+- How does Open3D's C++ backend compare to MATLAB's performance for
+  the specific operations used in lithic analysis (PCA, curvature
+  estimation, dihedral angle computation)?
+
+### 2c. The "LLM coding" problem
+
+- The research paper notes that archaeologists are using LLMs to
+  generate ad-hoc analysis scripts and getting bad results. Does
+  a well-designed Python library (like Dibble) with a clean API
+  actually solve this problem better than R/MATLAB?
+- Is Python more accessible to archaeologists than R? What does the
+  archaeological computing literature say about the Python vs R
+  adoption curve?
+- Are there any recent surveys of quantitative archaeologists
+  regarding their programming language preferences?
+
+### 2d. Dependency management and reproducibility
+
+- The paper identifies "frustratingly outdated software versions,
+  conflicting package environments, and broken dependencies" as a
+  major community pain point. How does the Python packaging
+  ecosystem (pip, conda, uv, Docker/Singularity containers) compare
+  to R's (CRAN, renv, packrat) and MATLAB's (toolboxes) for
+  long-term reproducibility?
+- Would containerisation (Docker with a locked Python environment)
+  solve the reproducibility problem identified in the paper?
+- Are there successful examples of Python-based archaeological
+  software that have been maintained for 5+ years?
+
+### 2e. Community and adoption
+
+- What is the current state of the open-archaeo.info registry?
+  How many Python tools vs R tools are listed?
+- Are there any Python lithic analysis libraries in active
+  development that Dibble should be aware of?
+- What is the GitHub activity level for Lithics3D, PyLithics, and
+  any Python competitors?
+
+## Expected output format
+
+For each topic, provide:
+1. A summary of key findings (executive brief)
+2. Specific technical details (algorithms, libraries, benchmarks)
+3. References to specific papers, repositories, or tools
+4. Gaps in existing knowledge (what nobody has built yet)
+5. Recommendations for Dibble's development path based on findings

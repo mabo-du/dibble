@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dibble Classifier Validation Report</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+         max-width: 960px; margin: 0 auto; padding: 20px; background: #f8f9fa; color: #333; }
+  h1 { color: #1a1a2e; border-bottom: 3px solid #4472C4; padding-bottom: 8px; }
+  h2 { color: #2d3436; margin-top: 32px; }
+  .status { display: inline-block; padding: 6px 16px; border-radius: 4px;
+             font-weight: bold; font-size: 14px; }
+  .pass { background: #d4edda; color: #155724; }
+  .review { background: #fff3cd; color: #856404; }
+  .summary { background: white; border-radius: 8px; padding: 16px; margin: 16px 0;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+  th, td { border: 1px solid #dee2e6; padding: 8px 12px; text-align: left; }
+  th { background: #4472C4; color: white; }
+  tr:nth-child(even) { background: #f2f2f2; }
+  .cm-table td { text-align: center; font-family: monospace; min-width: 60px; }
+  .cm-header { background: #e8e8e8 !important; font-weight: bold; }
+  .cm-diagonal { background: #d4edda !important; }
+  .metrics { display: flex; gap: 16px; flex-wrap: wrap; }
+  .metric-card { background: white; border-radius: 8px; padding: 16px; flex: 1;
+                  min-width: 200px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .metric-value { font-size: 28px; font-weight: bold; color: #4472C4; }
+  .metric-label { font-size: 12px; color: #666; text-transform: uppercase; }
+  pre { background: #f5f5f5; padding: 12px; border-radius: 4px; overflow-x: auto;
+        font-size: 12px; }
+  .footer { margin-top: 40px; padding: 12px; text-align: center;
+             color: #888; font-size: 12px; border-top: 1px solid #dee2e6; }
+</style>
+</head>
+<body>
+<h1>Dibble Classifier Validation Report</h1>
+<p>Generated: 2026-05-27 16:57:37</p>
+<p class="status pass">PASS</p>
+<p>This report validates all three pre-trained lithic typology classifiers against
+held-out synthetic test data generated from published metric ranges.</p>
+
+
+<h2>Basic Morphological</h2>
+<div class="summary">
+<div class="metrics">
+  <div class="metric-card">
+    <div class="metric-value">97.8%</div>
+    <div class="metric-label">Overall Accuracy</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-value">5</div>
+    <div class="metric-label">Classes</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-value">500</div>
+    <div class="metric-label">Test Samples</div>
+  </div>
+</div>
+
+<h3>Per-Class Metrics</h3>
+<table>
+<tr><th>Class</th><th>Precision</th><th>Recall</th><th>F1-Score</th><th>Support</th></tr>
+
+
+<tr>
+  <td><b>Blade</b></td>
+  <td>0.990</td>
+  <td>1.000</td>
+  <td style="color:green;font-weight:bold;">0.995</td>
+  <td>100</td>
+</tr>
+
+<tr>
+  <td><b>Bladelet</b></td>
+  <td>1.000</td>
+  <td>0.990</td>
+  <td style="color:green;font-weight:bold;">0.995</td>
+  <td>100</td>
+</tr>
+
+<tr>
+  <td><b>Core</b></td>
+  <td>1.000</td>
+  <td>0.980</td>
+  <td style="color:green;font-weight:bold;">0.990</td>
+  <td>100</td>
+</tr>
+
+<tr>
+  <td><b>Flake</b></td>
+  <td>0.979</td>
+  <td>0.940</td>
+  <td style="color:green;font-weight:bold;">0.959</td>
+  <td>100</td>
+</tr>
+
+<tr>
+  <td><b>Tool</b></td>
+  <td>0.925</td>
+  <td>0.980</td>
+  <td style="color:green;font-weight:bold;">0.951</td>
+  <td>100</td>
+</tr>
+
+</table>
+
+<h3>Confusion Matrix</h3>
+<table class="cm-table">
+<tr><td class="cm-header">True \ Pred</td>
+<td class='cm-header'>Blade</td>
+<td class='cm-header'>Bladelet</td>
+<td class='cm-header'>Core</td>
+<td class='cm-header'>Flake</td>
+<td class='cm-header'>Tool</td>
+</tr>
+<tr><td class='cm-header'>Blade</td>
+<td class='cm-diagonal'>100</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+</tr>
+<tr><td class='cm-header'>Bladelet</td>
+<td class=''>1</td>
+<td class='cm-diagonal'>99</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+</tr>
+<tr><td class='cm-header'>Core</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class='cm-diagonal'>98</td>
+<td class=''>0</td>
+<td class=''>2</td>
+</tr>
+<tr><td class='cm-header'>Flake</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class='cm-diagonal'>94</td>
+<td class=''>6</td>
+</tr>
+<tr><td class='cm-header'>Tool</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>2</td>
+<td class='cm-diagonal'>98</td>
+</tr>
+
+</table>
+
+<h3>Detailed Report</h3>
+<pre>              precision    recall  f1-score   support
+
+       Blade       0.99      1.00      1.00       100
+    Bladelet       1.00      0.99      0.99       100
+        Core       1.00      0.98      0.99       100
+       Flake       0.98      0.94      0.96       100
+        Tool       0.92      0.98      0.95       100
+
+    accuracy                           0.98       500
+   macro avg       0.98      0.98      0.98       500
+weighted avg       0.98      0.98      0.98       500
+</pre>
+
+<h2>Bordes Typology</h2>
+<div class="summary">
+<div class="metrics">
+  <div class="metric-card">
+    <div class="metric-value">85.1%</div>
+    <div class="metric-label">Overall Accuracy</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-value">7</div>
+    <div class="metric-label">Classes</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-value">700</div>
+    <div class="metric-label">Test Samples</div>
+  </div>
+</div>
+
+<h3>Per-Class Metrics</h3>
+<table>
+<tr><th>Class</th><th>Precision</th><th>Recall</th><th>F1-Score</th><th>Support</th></tr>
+
+
+<tr>
+  <td><b>Backed knife</b></td>
+  <td>0.860</td>
+  <td>0.920</td>
+  <td style="color:green;font-weight:bold;">0.889</td>
+  <td>100</td>
+</tr>
+
+<tr>
+  <td><b>Burin</b></td>
+  <td>0.872</td>
+  <td>0.820</td>
+  <td style="color:green;font-weight:bold;">0.845</td>
+  <td>100</td>
+</tr>
+
+<tr>
+  <td><b>Denticulate</b></td>
+  <td>0.827</td>
+  <td>0.810</td>
+  <td style="color:green;font-weight:bold;">0.818</td>
+  <td>100</td>
+</tr>
+
+<tr>
+  <td><b>Handaxe</b></td>
+  <td>1.000</td>
+  <td>0.980</td>
+  <td style="color:green;font-weight:bold;">0.990</td>
+  <td>100</td>
+</tr>
+
+<tr>
+  <td><b>Notched</b></td>
+  <td>0.725</td>
+  <td>0.740</td>
+  <td style="color:orange;font-weight:bold;">0.733</td>
+  <td>100</td>
+</tr>
+
+<tr>
+  <td><b>Point</b></td>
+  <td>0.854</td>
+  <td>0.820</td>
+  <td style="color:green;font-weight:bold;">0.837</td>
+  <td>100</td>
+</tr>
+
+<tr>
+  <td><b>Scraper</b></td>
+  <td>0.829</td>
+  <td>0.870</td>
+  <td style="color:green;font-weight:bold;">0.849</td>
+  <td>100</td>
+</tr>
+
+</table>
+
+<h3>Confusion Matrix</h3>
+<table class="cm-table">
+<tr><td class="cm-header">True \ Pred</td>
+<td class='cm-header'>Backed knife</td>
+<td class='cm-header'>Burin</td>
+<td class='cm-header'>Denticulate</td>
+<td class='cm-header'>Handaxe</td>
+<td class='cm-header'>Notched</td>
+<td class='cm-header'>Point</td>
+<td class='cm-header'>Scraper</td>
+</tr>
+<tr><td class='cm-header'>Backed knife</td>
+<td class='cm-diagonal'>92</td>
+<td class=''>0</td>
+<td class=''>2</td>
+<td class=''>0</td>
+<td class=''>4</td>
+<td class=''>1</td>
+<td class=''>1</td>
+</tr>
+<tr><td class='cm-header'>Burin</td>
+<td class=''>0</td>
+<td class='cm-diagonal'>82</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>2</td>
+<td class=''>7</td>
+<td class=''>9</td>
+</tr>
+<tr><td class='cm-header'>Denticulate</td>
+<td class=''>2</td>
+<td class=''>0</td>
+<td class='cm-diagonal'>81</td>
+<td class=''>0</td>
+<td class=''>17</td>
+<td class=''>0</td>
+<td class=''>0</td>
+</tr>
+<tr><td class='cm-header'>Handaxe</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class='cm-diagonal'>98</td>
+<td class=''>1</td>
+<td class=''>0</td>
+<td class=''>1</td>
+</tr>
+<tr><td class='cm-header'>Notched</td>
+<td class=''>6</td>
+<td class=''>0</td>
+<td class=''>14</td>
+<td class=''>0</td>
+<td class='cm-diagonal'>74</td>
+<td class=''>2</td>
+<td class=''>4</td>
+</tr>
+<tr><td class='cm-header'>Point</td>
+<td class=''>5</td>
+<td class=''>8</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>2</td>
+<td class='cm-diagonal'>82</td>
+<td class=''>3</td>
+</tr>
+<tr><td class='cm-header'>Scraper</td>
+<td class=''>2</td>
+<td class=''>4</td>
+<td class=''>1</td>
+<td class=''>0</td>
+<td class=''>2</td>
+<td class=''>4</td>
+<td class='cm-diagonal'>87</td>
+</tr>
+
+</table>
+
+<h3>Detailed Report</h3>
+<pre>              precision    recall  f1-score   support
+
+Backed knife       0.86      0.92      0.89       100
+       Burin       0.87      0.82      0.85       100
+ Denticulate       0.83      0.81      0.82       100
+     Handaxe       1.00      0.98      0.99       100
+     Notched       0.73      0.74      0.73       100
+       Point       0.85      0.82      0.84       100
+     Scraper       0.83      0.87      0.85       100
+
+    accuracy                           0.85       700
+   macro avg       0.85      0.85      0.85       700
+weighted avg       0.85      0.85      0.85       700
+</pre>
+
+<h2>Technological</h2>
+<div class="summary">
+<div class="metrics">
+  <div class="metric-card">
+    <div class="metric-value">89.8%</div>
+    <div class="metric-label">Overall Accuracy</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-value">5</div>
+    <div class="metric-label">Classes</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-value">500</div>
+    <div class="metric-label">Test Samples</div>
+  </div>
+</div>
+
+<h3>Per-Class Metrics</h3>
+<table>
+<tr><th>Class</th><th>Precision</th><th>Recall</th><th>F1-Score</th><th>Support</th></tr>
+
+
+<tr>
+  <td><b>Core rejuvenation</b></td>
+  <td>1.000</td>
+  <td>1.000</td>
+  <td style="color:green;font-weight:bold;">1.000</td>
+  <td>100</td>
+</tr>
+
+<tr>
+  <td><b>Crested blade</b></td>
+  <td>1.000</td>
+  <td>1.000</td>
+  <td style="color:green;font-weight:bold;">1.000</td>
+  <td>100</td>
+</tr>
+
+<tr>
+  <td><b>Primary</b></td>
+  <td>0.833</td>
+  <td>0.850</td>
+  <td style="color:green;font-weight:bold;">0.842</td>
+  <td>100</td>
+</tr>
+
+<tr>
+  <td><b>Secondary</b></td>
+  <td>0.758</td>
+  <td>0.720</td>
+  <td style="color:orange;font-weight:bold;">0.738</td>
+  <td>100</td>
+</tr>
+
+<tr>
+  <td><b>Tertiary</b></td>
+  <td>0.893</td>
+  <td>0.920</td>
+  <td style="color:green;font-weight:bold;">0.906</td>
+  <td>100</td>
+</tr>
+
+</table>
+
+<h3>Confusion Matrix</h3>
+<table class="cm-table">
+<tr><td class="cm-header">True \ Pred</td>
+<td class='cm-header'>Core rejuvenation</td>
+<td class='cm-header'>Crested blade</td>
+<td class='cm-header'>Primary</td>
+<td class='cm-header'>Secondary</td>
+<td class='cm-header'>Tertiary</td>
+</tr>
+<tr><td class='cm-header'>Core rejuvenation</td>
+<td class='cm-diagonal'>100</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+</tr>
+<tr><td class='cm-header'>Crested blade</td>
+<td class=''>0</td>
+<td class='cm-diagonal'>100</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+</tr>
+<tr><td class='cm-header'>Primary</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class='cm-diagonal'>85</td>
+<td class=''>15</td>
+<td class=''>0</td>
+</tr>
+<tr><td class='cm-header'>Secondary</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>17</td>
+<td class='cm-diagonal'>72</td>
+<td class=''>11</td>
+</tr>
+<tr><td class='cm-header'>Tertiary</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>8</td>
+<td class='cm-diagonal'>92</td>
+</tr>
+
+</table>
+
+<h3>Detailed Report</h3>
+<pre>                   precision    recall  f1-score   support
+
+Core rejuvenation       1.00      1.00      1.00       100
+    Crested blade       1.00      1.00      1.00       100
+          Primary       0.83      0.85      0.84       100
+        Secondary       0.76      0.72      0.74       100
+         Tertiary       0.89      0.92      0.91       100
+
+         accuracy                           0.90       500
+        macro avg       0.90      0.90      0.90       500
+     weighted avg       0.90      0.90      0.90       500
+</pre>
+
+<div class="footer">
+  Dibble Classifier Validation — <a href="https://github.com/mabo-du/dibble">github.com/mabo-du/dibble</a><br>
+  Reproduce: <code>python -m lithicore.data.run_benchmark</code>
+</div>
+</body>
+</html>

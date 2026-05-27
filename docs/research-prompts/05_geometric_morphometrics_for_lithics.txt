@@ -1,0 +1,12 @@
+Project: Lithic-Analysis-Platform
+Source: open_heritage_software_project_scopes.md — Project 7
+======================================================================
+
+CONTEXT:
+I am building an open-source 3D lithic (stone tool) morphological analysis application. I need technical and domain research:
+
+──────────────────────────────────────────────────────────────────────
+
+RESEARCH PROMPT 5:
+
+**Geometric morphometrics for lithics**: What landmark-based and outline-based geometric morphometric approaches are used for lithic shape analysis? What software (MorphoJ, geomorph R package) performs these analyses? What landmark schemes have been published for different tool types (handaxes, blades, flakes)?
