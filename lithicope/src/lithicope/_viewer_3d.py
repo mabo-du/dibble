@@ -50,6 +50,13 @@ class Viewer3D(QWidget):
         self._scale_points: list = []
         self._scale_actors: list = []
         self._scale_callback = None
+        # Annotation state
+        self._annotation_mode_enabled: bool = False
+        self._annotation_display_mode: str = "pin_label"
+        self._annotation_actors: list = []
+        self._annotation_place_callback: Optional[callable] = None
+        self._annotation_select_callback: Optional[callable] = None
+        self._annotations_data: list = []
         self._placeholder: Optional[QLabel] = None
 
         layout = QVBoxLayout()
@@ -348,6 +355,138 @@ class Viewer3D(QWidget):
         self._scale_points = []
         self._scale_callback = None
         self.plotter.disable_picking()
+        self.plotter.render()
+
+    # ── Annotation display ──────────────────────────────────
+
+    def set_annotation_display_mode(self, mode: str) -> None:
+        """Set annotation visual style: 'pin_label', 'pin_only', or 'numbered'."""
+        self._annotation_display_mode = mode
+        self.refresh_annotations()
+
+    def refresh_annotations(self, annotations: Optional[list] = None) -> None:
+        """Refresh displayed annotation pins/labels from a list of Annotation objects."""
+        if not HAS_PYVISTAQT or self._pv_mesh is None:
+            return
+
+        if annotations is not None:
+            self._annotations_data = annotations
+
+        # Remove old annotation actors
+        for actor in self._annotation_actors:
+            self.plotter.remove_actor(actor, render=False)
+        self._annotation_actors.clear()
+
+        if not self._annotations_data:
+            self.plotter.render()
+            return
+
+        # Category colour palette
+        CATEGORY_COLORS = {
+            "scar":     (0.9, 0.2, 0.2),
+            "ridge":    (0.2, 0.6, 0.9),
+            "notch":    (0.2, 0.8, 0.3),
+            "cortex":   (0.9, 0.6, 0.1),
+            "flake":    (0.6, 0.2, 0.8),
+            "breakage": (0.9, 0.4, 0.6),
+        }
+        default_color = (0.5, 0.5, 0.5)
+
+        for i, ann in enumerate(self._annotations_data):
+            pt = ann.point
+            colour = CATEGORY_COLORS.get(ann.category.lower(), default_color)
+            sphere_radius = max(0.5, self._pv_mesh.length * 0.008)
+
+            sphere = pv.Sphere(radius=sphere_radius, center=[pt[0], pt[1], pt[2]])
+            actor = self.plotter.add_mesh(
+                sphere, color=colour, smooth_shading=True, opacity=0.9,
+            )
+            self._annotation_actors.append(actor)
+
+            if self._annotation_display_mode == "pin_label":
+                # Always show label
+                label_actor = self.plotter.add_point_labels(
+                    np.array([[pt[0], pt[1], pt[2]]]),
+                    [ann.title],
+                    point_size=0.01,
+                    font_size=10,
+                    text_color="black",
+                    shape="rect",
+                    fill_shape=False,
+                )
+                self._annotation_actors.append(label_actor)
+
+            elif self._annotation_display_mode == "numbered":
+                # Numbered labels
+                label_actor = self.plotter.add_point_labels(
+                    np.array([[pt[0], pt[1], pt[2]]]),
+                    [f"{i + 1}"],
+                    point_size=0.01,
+                    font_size=12,
+                    text_color="black",
+                    shape="rect",
+                    fill_shape=False,
+                )
+                self._annotation_actors.append(label_actor)
+
+            # Pin-only mode: no labels (shown on hover via picking)
+
+        self.plotter.render()
+
+    def clear_annotations(self) -> None:
+        """Remove all annotation overlays."""
+        for actor in self._annotation_actors:
+            self.plotter.remove_actor(actor, render=False)
+        self._annotation_actors.clear()
+        self._annotations_data = []
+        self.plotter.render()
+
+    def enable_annotation_placement_mode(self, callback: callable) -> None:
+        """Enter click-to-place annotation mode.
+
+        The callback receives (x, y, z) tuple of the clicked mesh point.
+        """
+        if not HAS_PYVISTAQT or self._pv_mesh is None:
+            return
+
+        self._annotation_mode_enabled = True
+        self._annotation_place_callback = callback
+
+        def _on_pick(picked_point):
+            if picked_point is None:
+                return
+            if self._annotation_place_callback:
+                self._annotation_place_callback(
+                    float(picked_point[0]),
+                    float(picked_point[1]),
+                    float(picked_point[2]),
+                )
+
+        self.plotter.enable_point_picking(
+            callback=_on_pick,
+            show_message="Click on the mesh to place an annotation",
+            use_mesh=True,
+            pickable=True,
+        )
+
+    def disable_annotation_placement_mode(self) -> None:
+        """Exit annotation placement mode."""
+        if not HAS_PYVISTAQT:
+            return
+        self.plotter.disable_picking()
+        self._annotation_mode_enabled = False
+        self._annotation_place_callback = None
+
+    def focus_on_point(self, point: tuple[float, float, float]) -> None:
+        """Move camera to focus on a specific 3D point."""
+        if not HAS_PYVISTAQT:
+            return
+        self.plotter.camera_position = [
+            [point[0], point[1], point[2] + self._pv_mesh.length * 0.5],
+            [point[0], point[1], point[2]],
+            [0, 0, 1],
+        ]
+        self.plotter.reset_camera()
         self.plotter.render()
 
     # ── Scar overlay ───────────────────────────────────────────
