@@ -43,12 +43,21 @@ Dibble is a desktop application for **end-to-end lithic analysis** — from phot
 - **Three display modes** — Pin+Label, Pin Only (hover), Numbered markers
 - **Photo capture** — screenshot from 3D view attached to any annotation
 - **Multi-user collaboration** — JSON export/import with smart merge (conflict detection by position)
-- **AI lithic classification** — 20-dim morphometric fingerprint extracts every diagnostic feature from the mesh
-- **Three pre-trained typologies** — Basic (flake/blade/bladelet/core/tool), Bordes (7 tool types), Technological (5-stage reduction)
+- **AI lithic classification** — 22-dim morphometric fingerprint (length, width, scar count, platform angle, edge angle statistics, curvature, symmetry, dorsal ridges, etc.)
+- **Three pre-trained typologies** — Basic (98% accuracy, 5 classes), Bordes (85% accuracy, 7 classes), Technological (90% accuracy, 5 classes)
 - **Explainable predictions** — "Why is this a blade?" with per-feature contribution percentages and expected ranges
 - **Diagnostic viewer overlays** — ridges (blue), platform (green), retouched edges (red) highlighted on mesh
 - **Active learning** — every correction retrains the model; auto-triggered at 10 corrections
 - **Custom typologies** — train a classifier on your own types from your own collection, save/share models
+- **Self-validation benchmark** — run `lithicore benchmark` to generate an HTML validation report with confusion matrices and per-class metrics
+
+### v4.1 — AI Lithic Assistant (May 2026)
+- **Conversational AI** — ask questions about your collection in natural language
+- **Local LLM** — Qwen3-4B runs entirely on your machine via llama.cpp (optional: `pip install llama-cpp-python`)
+- **Natural language to SQL** — "show me all crested blades with platform angles over 75°" → instant results
+- **Self-correcting** — the assistant fixes its own SQL errors automatically
+- **Explainable** — toggle "Show SQL" to see and verify the generated query
+- **Private** — fully offline, no data leaves your machine
 
 ---
 
@@ -56,16 +65,19 @@ Dibble is a desktop application for **end-to-end lithic analysis** — from phot
 
 ```bash
 # Install
-pip install dibble dibble-gui
+pip install lithicore lithicope
 
 # CLI — batch process a folder of meshes
-dibble batch ./meshes/ --output results.csv
+lithicore batch ./meshes/ --output results.csv
 
 # CLI — generate a publication figure
-dibble figure artefact.ply --output figure.svg --label "FLK-145"
+lithicore figure artefact.ply --output figure.svg --label "FLK-145"
+
+# CLI — validate classifier accuracy
+lithicore benchmark
 
 # GUI — launch the desktop application
-dibble-gui
+lithicope
 ```
 
 ## Architecture
@@ -93,7 +105,8 @@ lithicore/                 # Measurement library (pure Python, no GUI)
     ├── _scale_detection.py # ArUco/ruler scale detection
     ├── _photo_preprocessing.py  # Blur detection, exposure normalisation
     ├── _annotations.py     # Annotation data model + merge
-    └── _classification.py  # Feature extraction + classifier model
+    ├── _classification.py  # Feature extraction + classifier model
+    └── _assistant.py       # AI Lithic Assistant (local LLM query engine)
 
 lithicope/                 # Desktop GUI (PyQt6 + PyVista)
 ├── pyproject.toml
@@ -106,7 +119,8 @@ lithicope/                 # Desktop GUI (PyQt6 + PyVista)
     ├── _batch_runner.py    # Threaded batch processing
     ├── _photogrammetry_dialog.py  # 3-mode photogrammetry dialog
     ├── _annotation_panel.py      # Annotation list + edit panel
-    └── _classification_panel.py  # Classification result display + active learning
+    ├── _classification_panel.py  # Classification result display + active learning
+    └── _assistant_panel.py       # AI Assistant chat interface
 ```
 
 ## Requirements
@@ -117,6 +131,7 @@ lithicope/                 # Desktop GUI (PyQt6 + PyVista)
 - **trimesh, NumPy, SciPy** — for mesh processing and measurements
 - **opencv-python** — for photo pre-processing and scale detection
 - **scikit-learn, joblib** — for lithic typology classification
+- **llama-cpp-python** — optional, for AI Lithic Assistant (`pip install llama-cpp-python`)
 - **COLMAP** — for photogrammetry (install separately: `brew install colmap`, `sudo apt install colmap`, or `conda install -c conda-forge colmap`)
 - **pandas, ReportLab** — for CSV and PDF export
 
@@ -136,9 +151,22 @@ config = MeasurementConfig(repair_mesh=True, edge_threshold_degrees=45.0)
 2. 🔧 **Automatic orientation, repair, and measurement**
 3. 🏷 **3D annotation and collaboration**
 4. 🤖 **AI typology classification with active learning**
-5. 📊 **Publication-ready figures and exports**
+5. 💬 **Conversational AI assistant** — query your collection in natural language
+6. 📊 **Self-validation benchmark** — `lithicore benchmark` generates accuracy reports
 
-Active development continues with ceramic sherd classification ("Dibble: Fired") and LLM-powered natural language assemblage querying on the roadmap.
+### Classifier accuracy (synthetic test data)
+
+| Typology | Classes | Accuracy |
+|---|---|---|
+| Basic Morphological | 5 | ~98% |
+| Bordes Typology | 7 | ~85% |
+| Technological | 5 | ~90% |
+
+*Note: These results are on held-out synthetic test data. Real-world accuracy depends on mesh quality, orientation accuracy, and artefact condition. Run `lithicore benchmark` to reproduce on your machine.*
+
+### Roadmap
+- **Ceramic sherd classification** ("Dibble: Fired") — reusing the classifier engine for pottery
+- **Community benchmark** — user-contributed repository of real 3D lithic meshes with expert-verified labels
 
 ---
 
