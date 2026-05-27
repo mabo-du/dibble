@@ -1,6 +1,6 @@
 """_models.py — Core data types for lithicore measurement pipeline.
 
-exports: MeasurementConfig, MeasurementResult, ArtefactResult, Landmark, MeshQualityReport, MeshGrade, FeatureImportance, ClassificationResult, LithicFeatureVector
+exports: MeasurementConfig, MeasurementResult, ArtefactResult, Landmark, MeshQualityReport, MeshGrade, FeatureImportance, ClassificationResult, LithicFeatureVector, AssistantResult
 used_by: Every lithicore module imports these dataclasses
 rules:   All dataclasses frozen except ClassificationResult (mutable container).
          MeasurementResult.confidence is 0.0-1.0.
@@ -15,7 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
-from typing import ClassVar, List
+from typing import ClassVar, List, Optional
 
 import numpy as np
 
@@ -156,3 +156,13 @@ class LithicFeatureVector:
     def from_array(cls, arr: np.ndarray) -> LithicFeatureVector:
         """Construct from a 20-element array in FEATURE_NAMES order."""
         return cls(**dict(zip(cls.FEATURE_NAMES, arr)))
+
+
+@dataclass
+class AssistantResult:
+    """Result of an AI lithic assistant query."""
+    natural_language: str = ""
+    sql_query: str = ""
+    row_count: int = 0
+    processing_time_s: float = 0.0
+    error: Optional[str] = None
