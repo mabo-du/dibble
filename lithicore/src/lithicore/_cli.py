@@ -207,8 +207,12 @@ def benchmark(
     per-class metrics, and accuracy scores.
     """
     typer.echo("Running Dibble classifier validation benchmark...")
-    from lithicore.data.run_benchmark import main as run_benchmark
-    run_benchmark()
+    import subprocess
+    import sys
+    benchmark_script = Path(__file__).resolve().parent.parent.parent / "data" / "run_benchmark.py"
+    result = subprocess.run([sys.executable, str(benchmark_script)], capture_output=False)
+    if result.returncode != 0:
+        raise typer.Exit(code=1)
     typer.echo("\nBenchmark complete. Open docs/benchmark/results/report.html to view results.")
 
 
