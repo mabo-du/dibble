@@ -52,20 +52,58 @@ DATASETS = [
 ]
 
 
-def download_file(url: str, dest: Path, desc: str = "") -> None:
-    """Download a file with progress bar."""
-    if dest.exists():
-        print(f"  Already exists: {dest.name} ({dest.stat().st_size / 1e6:.0f} MB)")
-        return
+def is_valid_zip(path: Path) -> bool:
+    """Check if a file is a valid zip archive."""
+    if not path.exists():
+        return False
+    try:
+        with zipfile.ZipFile(path, "r") as zf:
+            return zf.testzip() is None
+    except (zipfile.BadZipFile, Exception):
+        return False
 
-    print(f"  Downloading {desc} ({dest.name})...")
+
+def download_file(url: str, dest: Path, desc: str = "") -> None:
+    """Download a file with progress bar and resume support."""
     dest.parent.mkdir(parents=True, exist_ok=True)
 
-    import urllib.request
-    from urllib.request import urlopen
+    # Check if we have a valid zip already
+    if is_valid_zip(dest):
+        print(f"  Already downloaded: {dest.name} ({dest.stat().st_size / 1e6:.0f} MB)")
+        return
 
-    # Stream download with progress
-    response = urlopen(url)
+    # Remove corrupted partial download
+    if dest.exists():
+        print(f"  Removing corrupted partial download ({dest.stat().st_size / 1e6:.0f} MB)...")
+        dest.unlink()
+
+    print(f"  Downloading {desc} ({dest.name})...")
+
+    import time
+    import urllib.request
+    from urllib.error import HTTPError, URLError
+
+    # Retry loop for transient server errors
+    max_retries = 5
+    for attempt in range(max_retries):
+        try:
+            req = urllib.request.Request(url)
+            response = urllib.request.urlopen(req, timeout=60)
+            break
+        except (HTTPError, URLError) as e:
+            code = getattr(e, "code", 0)
+            if code in (502, 503, 504) and attempt < max_retries - 1:
+                wait = (attempt + 1) * 10
+                print(f"\n  Server error ({code}). Retrying in {wait}s (attempt {attempt + 2}/{max_retries})...")
+                time.sleep(wait)
+            else:
+                print(f"\n  Download failed: {e}")
+                print("  Zenodo may be under load. Try again later.")
+                return
+        except Exception as e:
+            print(f"\n  Download error: {e}")
+            return
+
     total = int(response.headers.get("content-length", 0))
     chunk_size = 1024 * 1024  # 1 MB chunks
 
@@ -81,6 +119,12 @@ def download_file(url: str, dest: Path, desc: str = "") -> None:
             mb = downloaded / 1e6
             print(f"\r    {mb:.0f} / {total/1e6:.0f} MB ({pct:.0f}%)", end="")
     print()
+
+    # Verify the downloaded zip
+    if not is_valid_zip(dest):
+        print(f"  ERROR: Download corrupted. Please try again.")
+        dest.unlink()
+        return
 
 
 def get_typology(row: dict) -> str:
@@ -125,17 +169,23 @@ def process_dataset(ds: dict) -> list[dict]:
     print(f"  Loaded {len(metadata)} metadata records")
 
     # Download mesh archive if needed
-    if not ds["zip_file"].exists():
+    if is_valid_zip(ds["zip_file"]):
+        print(f"  Mesh archive ready: {ds['zip_file'].stat().st_size / 1e6:.0f} MB")
+    else:
+        if ds["zip_file"].exists():
+            print(f"  Removing corrupted archive ({ds['zip_file'].stat().st_size / 1e6:.0f} MB)...")
+            ds["zip_file"].unlink()
         print(f"  Mesh archive not found. Downloading {ds['n_meshes']} meshes...")
-        print(f"  This is a large download (~{ds['zip_file'].stat().st_size / 1e9:.1f} GB).")
+        print(f"  This is a large download (~1.8 GB per volume).")
         resp = input("  Download now? (y/n): ")
         if resp.lower() != "y":
             print("  Skipping download.")
             return []
 
         download_file(ds["zip_url"], ds["zip_file"], desc=ds["name"])
-    else:
-        print(f"  Mesh archive exists: {ds['zip_file'].stat().st_size / 1e6:.0f} MB")
+        if not is_valid_zip(ds["zip_file"]):
+            print("  Download failed. Try again.")
+            return []
 
     # Extract zip
     extract_dir = RAW_DIR / ds["mesh_prefix"]
@@ -145,7 +195,8 @@ def process_dataset(ds: dict) -> list[dict]:
             zf.extractall(path=extract_dir)
         print(f"  Extracted to {extract_dir}")
     else:
-        print(f"  Already extracted: {extract_dir}")
+        n_extracted = len(list(extract_dir.rglob("*.ply")))
+        print(f"  Already extracted: {extract_dir} ({n_extracted} PLY files)")
 
     # Build mesh path lookup
     mesh_files = {}
