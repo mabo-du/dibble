@@ -8,16 +8,19 @@ agent:   deepseek-v4-flash | 2026-05-27 | Initial implementation
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Optional
 
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QFileDialog,
     QGroupBox,
     QHBoxLayout,
     QLabel,
     QListWidget,
+    QMessageBox,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -124,6 +127,16 @@ class ClassificationPanel(QWidget):
         self._overlay_check.setChecked(True)
         layout.addWidget(self._overlay_check)
 
+        # Save / Load custom model
+        model_row = QHBoxLayout()
+        self._save_model_btn = QPushButton("Save Custom Model")
+        self._save_model_btn.clicked.connect(self._on_save_model)
+        model_row.addWidget(self._save_model_btn)
+        self._load_model_btn = QPushButton("Load Custom Model")
+        self._load_model_btn.clicked.connect(self._on_load_model)
+        model_row.addWidget(self._load_model_btn)
+        layout.addLayout(model_row)
+
         layout.addStretch()
 
     def _load_models(self) -> None:
@@ -173,11 +186,17 @@ class ClassificationPanel(QWidget):
     def _on_classify(self) -> None:
         """Run classification on the current mesh."""
         if self._current_mesh is None:
+            self._label_display.setText("No mesh loaded — open a mesh first")
+            self._result_group.setVisible(True)
             return
 
         model = self._get_current_model()
         if model is None or not model.is_loaded():
-            self._label_display.setText("Model not available")
+            self._label_display.setText(f"Model not available — try a different typology")
+            self._confidence_display.setText(
+                "Pre-trained models may need to be generated first. "
+                "Run: python -m lithicore.data.generate_training_data"
+            )
             self._result_group.setVisible(True)
             return
 
@@ -254,7 +273,60 @@ class ClassificationPanel(QWidget):
         """Check retrain threshold after correction debounce."""
         model = self._get_current_model()
         if model is not None:
-            model.retrain_if_ready(threshold=10)
+            retrained = model.retrain_if_ready(threshold=10)
+            if retrained:
+                self._label_display.setText("Model retrained from corrections")
+
+    # ── Model persistence ──
+
+    def _on_save_model(self) -> None:
+        """Save the current custom model to a .joblib file."""
+        model = self._get_current_model()
+        if model is None or not model.is_loaded():
+            QMessageBox.information(
+                self, "No Model", "No custom model loaded to save. "
+                "Train a custom model first via Train Custom Typology."
+            )
+            return
+        path_str, _ = QFileDialog.getSaveFileName(
+            self, "Save Custom Model", "",
+            "Joblib Model (*.joblib)",
+        )
+        if not path_str:
+            return
+        model.save(Path(path_str))
+        QMessageBox.information(
+            self, "Model Saved",
+            f"Custom model saved with {len(model._classes)} classes."
+        )
+
+    def _on_load_model(self) -> None:
+        """Load a custom model from a .joblib file."""
+        path_str, _ = QFileDialog.getOpenFileName(
+            self, "Load Custom Model", "",
+            "Joblib Model (*.joblib)",
+        )
+        if not path_str:
+            return
+        try:
+            model = ClassifierModel(typology_name="custom", model_path=Path(path_str))
+            self._models["custom"] = model
+            self._typology_combo.setCurrentText("Custom")
+            self._populate_correction_combo()
+            QMessageBox.information(
+                self, "Model Loaded",
+                f"Custom model loaded with {len(model._classes)} classes: "
+                f"{', '.join(model._classes)}"
+            )
+        except Exception as exc:
+            QMessageBox.warning(
+                self, "Load Error", f"Failed to load model:\n{exc}"
+            )
+
+    def has_model(self) -> bool:
+        """Check if the current typology has a loaded model."""
+        model = self._get_current_model()
+        return model is not None and model.is_loaded()
 
     def get_overlay_enabled(self) -> bool:
         """Check if diagnostic overlays should be shown."""
