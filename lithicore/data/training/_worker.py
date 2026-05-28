@@ -21,6 +21,11 @@ if __name__ == "__main__":
     mesh_path, artefact_id, typology, dataset, csv_name = sys.argv[1:6]
 
     mesh = trimesh.load(mesh_path, force="mesh")
+
+    # Fix inverted normals: if volume is negative the faces are wound inward
+    if mesh.is_watertight and mesh.volume < 0:
+        mesh.fix_normals()
+
     fv = extract_features(mesh)
 
     fieldnames = ["artefact_id", "typology", "dataset", "source_csv"] + fv.FEATURE_NAMES

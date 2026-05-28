@@ -74,6 +74,16 @@ def get_labels(rows: list[dict], system: str, lookup: dict) -> list[str]:
     labels = []
     for row in rows:
         aid = row["artefact_id"]
+        ds = row.get("dataset", "")
+
+        # Handaxe/biface datasets get their own label
+        if "Levantine_Acheulean" in ds:
+            if system == "technological":
+                labels.append("Handaxe")
+            else:
+                labels.append("Biface")
+            continue
+
         meta = lookup.get(aid, {})
         cls_val = meta.get("Class", "").strip()
         blank_val = meta.get("Blank", "").strip()
