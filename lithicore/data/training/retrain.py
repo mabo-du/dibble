@@ -77,6 +77,9 @@ def get_labels(rows: list[dict], system: str, lookup: dict) -> list[str]:
         ds = row.get("dataset", "")
 
         # Handaxe/biface datasets get their own label
+        # Use CSV-level typology as fallback for datasets without metadata
+        csv_typology = row.get("typology", "")
+
         if "Levantine_Acheulean" in ds or "COADS" in ds:
             if system == "technological":
                 labels.append("Handaxe")
@@ -107,6 +110,8 @@ def get_labels(rows: list[dict], system: str, lookup: dict) -> list[str]:
                 labels.append("Bladelet")
             elif blank_val == "Flake":
                 labels.append("Flake")
+            elif csv_typology and system == "basic":
+                labels.append(csv_typology)
             else:
                 labels.append("Other")
 
@@ -137,10 +142,15 @@ def get_labels(rows: list[dict], system: str, lookup: dict) -> list[str]:
                 labels.append("Flake")
             elif cls_val == "Tool":
                 labels.append("Tool")
+            elif csv_typology and system != "technological":
+                labels.append(csv_typology)
             else:
                 labels.append("Other")
         else:
-            labels.append("Unknown")
+            if csv_typology:
+                labels.append(csv_typology)
+            else:
+                labels.append("Unknown")
     return labels
 
 
