@@ -67,7 +67,7 @@ def download_glb(record: dict, dest: Path) -> Path | None:
 
 def convert_to_ply(glb_path: Path, ply_dir: Path) -> Path | None:
     """Convert GLB to PLY via trimesh."""
-    ply_path = ply_dir / glb_path.stem + ".ply"
+    ply_path = ply_dir / f"{glb_path.stem}.ply"
     if ply_path.exists():
         return ply_path
     try:
