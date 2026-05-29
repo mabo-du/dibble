@@ -37,30 +37,62 @@ def get_records(page: int = 1, size: int = 50) -> dict:
 
 
 def extract_type(title: str, description: str) -> str:
-    """Extract artefact type from title/description."""
+    """Extract artefact type from title/description.
+    
+    COADS records use patterns like:
+      - "Biface - COADS_156-117" (type in title)
+      - "Projectile point collected in..." (type at start of description)
+      - "Brewerton Point collected in..." (named point type in description)
+      - "ROI013-120-05" (catalogue-only; check description start)
+    """
     title_lower = title.lower()
     desc_lower = description.lower()
+    combined = title_lower + " " + desc_lower
 
-    if "biface" in title_lower or "biface" in desc_lower:
-        return "Biface"
-    elif "projectile" in title_lower or "point" in title_lower:
+    # Priority: look at the first 100 chars of description for type
+    desc_start = desc_lower[:100]
+
+    # Check for known point types
+    point_types = [
+        "adena", "snyders", "hi-lo", "chesapeake", "brewerton",
+        "thebes", "st. charles", "dickson", "holland", "kirk",
+        "lamoka", "levanna", "madison", "norton", "osceola",
+        "pickwick", "poplar island", "turkey tail",
+    ]
+    for pt in point_types:
+        if pt in desc_start:
+            return "Projectile Point"
+
+    if desc_start.startswith("projectile"):
         return "Projectile Point"
-    elif "scraper" in title_lower or "scraper" in desc_lower:
+    elif desc_start.startswith("biface"):
+        return "Biface"
+    elif desc_start.startswith("scraper"):
         return "Scraper"
+    elif desc_start.startswith("drill"):
+        return "Drill"
+    elif desc_start.startswith("core"):
+        return "Core"
+    elif desc_start.startswith("flake"):
+        return "Flake"
+    elif desc_start.startswith("knife"):
+        return "Knife"
+    elif desc_start.startswith("point"):
+        return "Projectile Point"
+    elif desc_start.startswith("gorget"):
+        return "Gorget"
+    elif desc_start.startswith("tool"):
+        return "Tool"
+
+    # Fallback: check title
+    if "biface" in title_lower:
+        return "Biface"
+    elif "point" in title_lower:
+        return "Projectile Point"
     elif "gorget" in title_lower:
         return "Gorget"
-    elif "drill" in title_lower:
-        return "Drill"
-    elif "core" in title_lower:
-        return "Core"
-    elif "flake" in title_lower:
-        return "Flake"
-    elif "knife" in title_lower:
-        return "Knife"
-    elif "tool" in title_lower:
-        return "Tool"
-    else:
-        return "Unknown"
+
+    return "Unknown"
 
 
 def extract_location(description: str) -> str:

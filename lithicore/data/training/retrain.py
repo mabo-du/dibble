@@ -77,7 +77,7 @@ def get_labels(rows: list[dict], system: str, lookup: dict) -> list[str]:
         ds = row.get("dataset", "")
 
         # Handaxe/biface datasets get their own label
-        if "Levantine_Acheulean" in ds:
+        if "Levantine_Acheulean" in ds or "COADS" in ds:
             if system == "technological":
                 labels.append("Handaxe")
             else:
