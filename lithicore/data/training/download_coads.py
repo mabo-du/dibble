@@ -2,8 +2,8 @@
 
 COADS (Central Ohio Archaeological Digitization Survey) has ~2,400
 individual 3D models in GLB format, each as a separate Zenodo record
-tagged "bsu_aal". This script queries the Zenodo API in pages,
-downloads the GLB files, and optionally converts them to PLY.
+tagged "bsu_aal". Downloads the GLB files, converts to PLY, and saves
+metadata to a CSV for training label assignment.
 
 Usage:
     python3 lithicore/data/training/download_coads.py \
@@ -12,8 +12,10 @@ Usage:
 """
 
 import argparse
+import csv
 import json
 import os
+import re
 import sys
 import time
 import urllib.request
@@ -34,35 +36,87 @@ def get_records(page: int = 1, size: int = 50) -> dict:
         return json.loads(resp.read())
 
 
-def download_glb(record: dict, dest: Path) -> Path | None:
-    """Download GLB file from a Zenodo record. Returns path or None."""
+def extract_type(title: str, description: str) -> str:
+    """Extract artefact type from title/description."""
+    title_lower = title.lower()
+    desc_lower = description.lower()
+
+    if "biface" in title_lower or "biface" in desc_lower:
+        return "Biface"
+    elif "projectile" in title_lower or "point" in title_lower:
+        return "Projectile Point"
+    elif "scraper" in title_lower or "scraper" in desc_lower:
+        return "Scraper"
+    elif "gorget" in title_lower:
+        return "Gorget"
+    elif "drill" in title_lower:
+        return "Drill"
+    elif "core" in title_lower:
+        return "Core"
+    elif "flake" in title_lower:
+        return "Flake"
+    elif "knife" in title_lower:
+        return "Knife"
+    elif "tool" in title_lower:
+        return "Tool"
+    else:
+        return "Unknown"
+
+
+def extract_location(description: str) -> str:
+    """Extract county/state from Zenodo description."""
+    # Common pattern: "collected in <Town>, <County>, <State>"
+    match = re.search(
+        r"(?:collected|found)\s+in\s+([^,]+(?:,\s*[^,]+)?(?:,\s*[^,]+)?)",
+        description, re.IGNORECASE,
+    )
+    if match:
+        return match.group(1).strip()
+    return ""
+
+
+def download_glb(record: dict, dest: Path) -> tuple[Path | None, dict]:
+    """Download GLB file from a Zenodo record. Returns (path, metadata)."""
+    meta_info = record.get("metadata", {})
     files = record.get("files", [])
     glb = next((f for f in files if f["key"].endswith(".glb")), None)
     if not glb:
-        return None
+        return None, {}
 
     filename = glb["key"]
     out_path = dest / filename
+    title = meta_info.get("title", "")
+    description = meta_info.get("description", "") or ""
+
+    # Extract plaintext from HTML description
+    plain_desc = re.sub(r"<[^>]+>", "", description).strip()
+
+    metadata = {
+        "file_hash": out_path.stem,
+        "title": title,
+        "type": extract_type(title, plain_desc),
+        "location": extract_location(plain_desc),
+        "doi": record.get("doi", ""),
+        "publication_date": meta_info.get("publication_date", ""),
+    }
 
     if out_path.exists():
         print(f"    Already exists: {filename}")
-        return out_path
+        return out_path, metadata
 
     url = glb["links"]["self"]
-    doi = record.get("doi", "?")
-    title = record.get("metadata", {}).get("title", "?")[:50]
+    print(f"    Downloading {filename} ({glb['size']/1e6:.0f} MB) — {title[:50]}")
 
-    print(f"    Downloading {filename} ({glb['size']/1e6:.0f} MB) — {title}")
     try:
         req = urllib.request.Request(url)
         req.add_header("User-Agent", "Dibble/1.0")
         with urllib.request.urlopen(req, timeout=120) as resp:
             with open(out_path, "wb") as f:
                 f.write(resp.read())
-        return out_path
+        return out_path, metadata
     except Exception as e:
         print(f"    Failed: {e}")
-        return None
+        return None, {}
 
 
 def convert_to_ply(glb_path: Path, ply_dir: Path) -> Path | None:
@@ -79,6 +133,24 @@ def convert_to_ply(glb_path: Path, ply_dir: Path) -> Path | None:
         return None
 
 
+def save_metadata(meta_path: Path, metadata: dict) -> None:
+    """Append one row to the metadata CSV."""
+    fieldnames = ["file_hash", "title", "type", "location", "doi", "publication_date"]
+    is_new = not meta_path.exists() or meta_path.stat().st_size == 0
+    with open(meta_path, "a", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        if is_new:
+            writer.writeheader()
+        writer.writerow(metadata)
+
+
+def load_downloaded(glb_dir: Path) -> set:
+    """Return set of downloaded file stems."""
+    if not glb_dir.exists():
+        return set()
+    return {f.stem for f in glb_dir.glob("*.glb")}
+
+
 def main():
     parser = argparse.ArgumentParser(description="Download COADS 3D models")
     parser.add_argument("--dest", default="/data/dibble-training/raw/COADS",
@@ -92,16 +164,22 @@ def main():
     dest = Path(args.dest)
     glb_dir = dest / "glb"
     ply_dir = dest / "ply"
+    meta_path = dest / "metadata.csv"
     glb_dir.mkdir(parents=True, exist_ok=True)
     ply_dir.mkdir(parents=True, exist_ok=True)
+
+    # Check existing downloads
+    existing = load_downloaded(glb_dir)
+    if existing:
+        print(f"Resuming: {len(existing)} models already downloaded")
 
     # Query first page to get total count
     data = get_records(page=1, size=1)
     total = data["hits"]["total"]
     max_dl = args.max if args.max > 0 else total
-    print(f"COADS: {total} records available, downloading max {max_dl}")
+    print(f"COADS: {total} records available, target {max_dl}")
 
-    downloaded = 0
+    downloaded = len(existing)
     page = 1
     while downloaded < max_dl:
         data = get_records(page=page, size=25)
@@ -113,24 +191,28 @@ def main():
             if downloaded >= max_dl:
                 break
 
-            path = download_glb(record, glb_dir)
-            if path and args.convert:
-                convert_to_ply(path, ply_dir)
+            path, meta = download_glb(record, glb_dir)
+            if path:
+                if args.convert:
+                    convert_to_ply(path, ply_dir)
+                if meta:
+                    save_metadata(meta_path, meta)
+                downloaded += 1
+            elif meta.get("file_hash") in existing:
+                downloaded += 1  # Count already-downloaded
 
-            downloaded += 1
             if downloaded % 10 == 0:
                 print(f"  Progress: {downloaded}/{max_dl}")
 
-            # Rate limit: be nice to Zenodo
             time.sleep(0.5)
 
         page += 1
 
     print(f"\nDone: {downloaded} models downloaded")
-    if glb_dir.exists():
-        print(f"GLB:  {sum(1 for _ in glb_dir.glob('*.glb'))} files")
-    if ply_dir.exists():
-        print(f"PLY:  {sum(1 for _ in ply_dir.glob('*.ply'))} files")
+    n_glb = len(list(glb_dir.glob("*.glb"))) if glb_dir.exists() else 0
+    n_ply = len(list(ply_dir.glob("*.ply"))) if ply_dir.exists() else 0
+    n_meta = sum(1 for _ in open(meta_path)) - 1 if meta_path.exists() else 0
+    print(f"GLB: {n_glb}   PLY: {n_ply}   Metadata: {n_meta}")
 
 
 if __name__ == "__main__":
