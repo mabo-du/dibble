@@ -78,10 +78,10 @@ Dibble is named for **[Harold Dibble](https://en.wikipedia.org/wiki/Harold_Dibbl
 | Feature | Details |
 |---|---|
 | **Morphometric fingerprint** | 22-dimensional feature vector extracted from every mesh: length, width, thickness, elongation, flatness, scar count, platform angle, edge angle statistics (mean, std, skewness, kurtosis), curvature, cross-section profile, symmetry, dorsal ridge count, and surface roughness. |
-| **Three pre-trained typologies** | **Basic** (Flake, Blade, Bladelet, Core, Tool — ~98% accuracy), **Bordes** (Scraper, Handaxe, Point, Burin, Denticulate, Notched, Backed knife — ~85% accuracy), **Technological** (Primary, Secondary, Tertiary, Crested blade, Core rejuvenation — ~90% accuracy). |
+| **Three pre-trained typologies** | **Basic** (8 classes: Biface, Blade, Bladelet, Core, Flake, Retouched Flake, Tool, Unmodified Flake — 80.7% 5-fold CV), **Bordes** (same morphology-based mapping — 80.7% CV), **Technological** (7 reduction stages — 65.3% CV). |
 | **Explainable predictions** | Every prediction includes a per-feature breakdown showing which measurements drove the decision and whether each falls within the expected range for the predicted type. |
 | **Diagnostic viewer overlays** | The 3D viewer highlights dorsal ridges (blue), platform (green), and retouched edges (red) — the physical features that the classifier used. |
-| **Active learning** | Every time you correct a prediction, it queues for retraining. After 10 corrections, the model retrains automatically, improving over time for your specific assemblage. |
+| **Active learning** | Every time you correct a prediction, it queues for retraining. After 10 corrections, the model retrains automatically on 3,028 baseline artefacts plus your corrections. |
 | **Custom typologies** | Define your own typology system and train a classifier on your own types. Save the model to share with colleagues. |
 | **Self-validation** | Run `lithicore benchmark` to generate an interactive HTML report with confusion matrices, per-class precision/recall/F1, and accuracy scores. Reproducible on any machine. |
 
@@ -145,7 +145,15 @@ lithicore/                          # Core library (pure Python, no GUI)
 ├── data/
 │   ├── models/                     # Pre-trained classifiers (.joblib)
 │   ├── grammars/                   # GBNF grammar for SQL generation
-│   └── generate_training_data.py   # Training data generator
+│   ├── training/
+│   │   ├── download_and_process.py # Dataset download + feature extraction
+│   │   ├── _worker.py              # Per-mesh subprocess worker (OOM-safe)
+│   │   ├── process_safe.py         # Memory-safe batch processing pipeline
+│   │   ├── retrain.py              # Retrain all classifiers from matrix
+│   │   ├── download_coads.py       # COADS batch downloader (Zenodo API)
+│   │   ├── validate_pipeline.py    # Photo-to-mesh pipeline validator
+│   │   └── processed/              # Generated training_matrix.csv
+│   └── generate_training_data.py   # Legacy synthetic data generator
 
 lithicope/                          # Desktop GUI (PyQt6 + PyVista)
 └── src/lithicope/
@@ -183,13 +191,22 @@ lithicope/                          # Desktop GUI (PyQt6 + PyVista)
 
 ## Classifier Validation
 
-| Typology | Classes | Test Accuracy |
-|---|---|---|
-| Basic Morphological | Flake, Blade, Bladelet, Core, Tool | ~98% |
-| Bordes Typology | Scraper, Handaxe, Point, Burin, Denticulate, Notched, Backed knife | ~85% |
-| Technological | Primary, Secondary, Tertiary, Crested blade, Core rejuvenation | ~90% |
+The classifiers are trained on **3,028 real-world 3D scan meshes** from three continents:
 
-*Results are on held-out synthetic test data generated from published metric ranges.
+| Data Source | Origin | Artefacts | Scanner |
+|---|---|---|---|
+| Open Aurignacian Project (Vols 1-4) | Italy | 2,010 | Artec Space Spider / Micro / micro-CT |
+| Levantine Acheulean Handaxes | Israel / Palestine | 526 | Structured light |
+| COADS (Central Ohio Arch. Digitization Survey) | Ohio, USA | 392 | Structured light |
+| Morales Experimental Retouch | Spain | 100 | Structured light |
+
+| Typology | Classes | 5-Fold CV Accuracy | Training Accuracy |
+|---|---|---|---|
+| Basic Morphological | Biface, Blade, Bladelet, Core, Flake, Retouched Flake, Tool, Unmodified Flake | **80.7%** | 95.3% |
+| Bordes Typology | Same morphology-based mapping | **80.7%** | 95.3% |
+| Technological | Handaxe, Initialization, Maintenance, Optimal, Other, Semi-cortical, Undetermined | **65.3%** | 87.4% |
+
+*Results are 5-fold cross-validation on real archaeological and experimental meshes.
 Run `lithicore benchmark` to reproduce the full validation report on your machine,
 including confusion matrices and per-class precision/recall/F1 scores.*
 
