@@ -193,21 +193,21 @@ lithicope/                          # Desktop GUI (PyQt6 + PyVista)
 
 ## Classifier Validation
 
-The classifiers are trained on **3,312 real-world 3D scan meshes** from three continents:
+The classifiers are trained on **3,412 real-world 3D scan meshes** from three continents:
 
 | Data Source | Origin | Artefacts | Scanner |
 |---|---|---|---|
 | Open Aurignacian Project (Vols 1-4) + Broglio, Castelcivita, Cala | Italy | 2,418 | Artec Space Spider / Micro / micro-CT |
 | Levantine Acheulean Handaxes | Israel / Palestine | 526 | Structured light |
-| COADS (Central Ohio Arch. Digitization Survey) | Ohio, USA | 392 | Structured light |
+| COADS (Central Ohio Arch. Digitization Survey) | Ohio, USA | 514 | Structured light |
 | Lombao Experimental Cores | Spain | 254 | Structured light |
 | Morales Experimental Retouch | Spain | 100 | Structured light |
 
 | Typology | Classes | 5-Fold CV Accuracy | Training Accuracy |
 |---|---|---|---|
-| Basic Morphological | Biface, Blade, Bladelet, Core, Experimental Core, Flake, Retouched Flake, Tool, Unmodified Cobble, Unmodified Flake | **80.6%** | 95.3% |
-| Bordes Typology | Same morphology-based mapping | **80.6%** | 95.3% |
-| Technological | Handaxe, Initialization, Maintenance, Optimal, Other, Semi-cortical, Undetermined, Unknown | **69.3%** | 90.6% |
+| Basic Morphological | Biface, Blade, Bladelet, Core, Experimental Core, Flake, Retouched Flake, Tool, Unmodified Cobble, Unmodified Flake | **81.3%** | 96.1% |
+| Bordes Typology | Same morphology-based mapping | **81.3%** | 96.1% |
+| Technological | Handaxe, Initialization, Maintenance, Optimal, Other, Semi-cortical, Undetermined, Unknown | **71.0%** | 92.4% |
 
 *Results are 5-fold cross-validation on real archaeological and experimental meshes.
 Run `lithicore benchmark` to generate a full interactive HTML report with confusion

@@ -45,18 +45,19 @@ WORKER = PROJECT_ROOT / "lithicore" / "data" / "training" / "_worker.py"
 # Known mesh directories — maps data_dir -> dataset_name, typology_label
 # typology_label=None means "resolve from metadata"
 MESH_SOURCES: list[dict] = [
-    {"dir": DATA_DIR / "RF_3D_Meshes",      "dataset": "Fumane Cave (Vol 1)",       "label": None},
-    {"dir": DATA_DIR / "CTC_3D_Meshes",      "dataset": "Castelcivita (Vol 2)",      "label": None},
-    {"dir": DATA_DIR / "Ca_3D_Meshes",       "dataset": "Cala (Vol 3)",               "label": None},
-    {"dir": DATA_DIR / "RB_3D_Meshes",       "dataset": "Bombrini (Vol 4)",           "label": None},
-    # COADS (from downloaded PLY, not from the structured Meshes dir)
-    {"dir": DATA_DIR / "COADS" / "ply",      "dataset": "COADS (Ohio)",               "label": "Biface"},
-    # Levantine handaxes — PLY files only (WRL would need conversion)
-    {"dir": DATA_DIR / "levantine_handaxes",  "dataset": "Levantine Acheulean Handaxes", "label": "Biface"},
-    # Lombao cores — STL files
-    {"dir": DATA_DIR / "lombao_cores",       "dataset": "Lombao Experimental Cores (Spain)", "label": "Experimental Core"},
-    # Morales retouch — STL files
-    {"dir": DATA_DIR / "morales_retouch",    "dataset": "Morales Retouch (Spain)",     "label": "Retouched Flake"},
+    # Fumane volumes — IDs match filenames directly (e.g. "RF.b_10019")
+    {"dir": DATA_DIR / "RF_3D_Meshes",      "dataset": "Fumane Cave (Vol 1)",       "label": None,       "id_prefix": ""},
+    {"dir": DATA_DIR / "CTC_3D_Meshes",     "dataset": "Castelcivita (Vol 2)",      "label": None,       "id_prefix": ""},
+    {"dir": DATA_DIR / "Ca_3D_Meshes",      "dataset": "Cala (Vol 3)",              "label": None,       "id_prefix": ""},
+    {"dir": DATA_DIR / "RB_3D_Meshes",      "dataset": "Bombrini (Vol 4)",          "label": None,       "id_prefix": ""},
+    # COADS — PLY files named by SHA256 hash, prefixed with "COADS_" in the matrix
+    {"dir": DATA_DIR / "COADS" / "ply",     "dataset": "COADS (Ohio)",              "label": "Biface",   "id_prefix": "COADS_"},
+    # Levantine handaxes — IDs match filenames directly
+    {"dir": DATA_DIR / "levantine_handaxes", "dataset": "Levantine Acheulean Handaxes", "label": "Biface", "id_prefix": ""},
+    # Lombao cores — STL files, prefixed with "Lombao_" in the matrix
+    {"dir": DATA_DIR / "lombao_cores",      "dataset": "Lombao Experimental Cores (Spain)", "label": "Experimental Core", "id_prefix": "Lombao_"},
+    # Morales retouch — STL files, prefixed with "Morales_" in the matrix
+    {"dir": DATA_DIR / "morales_retouch",   "dataset": "Morales Retouch (Spain)",    "label": "Retouched Flake", "id_prefix": "Morales_"},
 ]
 
 # Typology labels for technological system
@@ -80,14 +81,17 @@ def index_existing_matrix() -> set[str]:
 
 
 def find_all_meshes(source: dict) -> dict[str, Path]:
-    """Find all mesh files in a source directory, keyed by stem."""
+    """Find all mesh files in a source directory, keyed by matrix artefact ID."""
     meshes: dict[str, Path] = {}
     d = source["dir"]
+    prefix = source.get("id_prefix", "")
     if not d.is_dir():
         return meshes
     for suffix in (".ply", ".stl", ".obj"):
         for f in d.rglob(f"*{suffix}"):
-            meshes[f.stem] = f
+            # Apply prefix so the key matches the matrix artefact ID format
+            artefact_id = f"{prefix}{f.stem}"
+            meshes[artefact_id] = f
     return meshes
 
 
@@ -119,7 +123,7 @@ def process_mesh(mesh_path: Path, artefact_id: str, source: dict) -> dict | None
         result = subprocess.run(
             [sys.executable, str(WORKER), str(mesh_path), artefact_id,
              source.get("label", ""), source["dataset"], src_csv],
-            capture_output=True, text=True, timeout=120,
+            capture_output=True, text=True, timeout=300,
         )
         if result.returncode != 0 or not result.stdout.strip():
             if result.stderr:

@@ -1,143 +1,143 @@
 {
-  "accuracy": 0.9061,
+  "accuracy": 0.9244,
   "per_class": [
     {
       "class": "Handaxe",
-      "precision": 0.944,
-      "recall": 0.958,
-      "f1": 0.951,
-      "support": 918
+      "precision": 0.959,
+      "recall": 0.97,
+      "f1": 0.964,
+      "support": 1018
     },
     {
       "class": "Initialization",
       "precision": 1.0,
-      "recall": 0.803,
-      "f1": 0.891,
+      "recall": 0.895,
+      "f1": 0.944,
       "support": 76
     },
     {
       "class": "Maintenance",
-      "precision": 0.901,
-      "recall": 0.875,
-      "f1": 0.887,
+      "precision": 0.912,
+      "recall": 0.9,
+      "f1": 0.906,
       "support": 311
     },
     {
       "class": "Optimal",
-      "precision": 0.916,
-      "recall": 0.941,
-      "f1": 0.928,
+      "precision": 0.93,
+      "recall": 0.939,
+      "f1": 0.935,
       "support": 854
     },
     {
       "class": "Other",
-      "precision": 0.782,
-      "recall": 0.956,
-      "f1": 0.86,
+      "precision": 0.808,
+      "recall": 0.972,
+      "f1": 0.883,
       "support": 503
     },
     {
       "class": "Semi-cortical",
-      "precision": 1.0,
-      "recall": 0.475,
-      "f1": 0.644,
+      "precision": 0.993,
+      "recall": 0.559,
+      "f1": 0.715,
       "support": 238
     },
     {
       "class": "Undetermined",
       "precision": 1.0,
-      "recall": 0.964,
-      "f1": 0.982,
+      "recall": 1.0,
+      "f1": 1.0,
       "support": 28
     },
     {
       "class": "Unknown",
-      "precision": 0.945,
-      "recall": 0.948,
-      "f1": 0.947,
+      "precision": 0.968,
+      "recall": 0.956,
+      "f1": 0.962,
       "support": 384
     }
   ],
   "confusion_matrix": [
     [
-      879,
-      0,
-      1,
-      5,
-      22,
+      987,
       0,
       0,
-      11
-    ],
-    [
-      1,
-      61,
-      1,
-      3,
-      9,
-      0,
-      0,
-      1
-    ],
-    [
-      3,
-      0,
-      272,
-      23,
-      10,
-      0,
-      0,
-      3
-    ],
-    [
-      3,
-      0,
-      17,
-      804,
-      28,
-      0,
-      0,
-      2
-    ],
-    [
-      16,
-      0,
-      1,
       2,
-      481,
-      0,
-      0,
-      3
-    ],
-    [
-      12,
-      0,
-      10,
-      40,
-      62,
-      113,
-      0,
-      1
-    ],
-    [
-      0,
-      0,
-      0,
+      19,
       1,
       0,
+      9
+    ],
+    [
+      1,
+      68,
       0,
-      27,
+      1,
+      6,
+      0,
+      0,
       0
     ],
     [
-      17,
+      3,
+      0,
+      280,
+      19,
+      8,
+      0,
+      0,
+      1
+    ],
+    [
+      3,
+      0,
+      19,
+      802,
+      29,
+      0,
+      0,
+      1
+    ],
+    [
+      11,
+      0,
+      1,
+      2,
+      489,
+      0,
+      0,
+      0
+    ],
+    [
+      10,
+      0,
+      7,
+      36,
+      51,
+      133,
+      0,
+      1
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      28,
+      0
+    ],
+    [
+      14,
       0,
       0,
       0,
       3,
       0,
       0,
-      364
+      367
     ]
   ],
   "classes": [
@@ -150,9 +150,9 @@
     "Undetermined",
     "Unknown"
   ],
-  "n_samples": 3312,
+  "n_samples": 3412,
   "n_classes": 8,
-  "classification_report": "                precision    recall  f1-score   support\n\n       Handaxe       0.94      0.96      0.95       918\nInitialization       1.00      0.80      0.89        76\n   Maintenance       0.90      0.87      0.89       311\n       Optimal       0.92      0.94      0.93       854\n         Other       0.78      0.96      0.86       503\n Semi-cortical       1.00      0.47      0.64       238\n  Undetermined       1.00      0.96      0.98        28\n       Unknown       0.95      0.95      0.95       384\n\n      accuracy                           0.91      3312\n     macro avg       0.94      0.86      0.89      3312\n  weighted avg       0.91      0.91      0.90      3312\n",
+  "classification_report": "                precision    recall  f1-score   support\n\n       Handaxe       0.96      0.97      0.96      1018\nInitialization       1.00      0.89      0.94        76\n   Maintenance       0.91      0.90      0.91       311\n       Optimal       0.93      0.94      0.93       854\n         Other       0.81      0.97      0.88       503\n Semi-cortical       0.99      0.56      0.72       238\n  Undetermined       1.00      1.00      1.00        28\n       Unknown       0.97      0.96      0.96       384\n\n      accuracy                           0.92      3412\n     macro avg       0.95      0.90      0.91      3412\n  weighted avg       0.93      0.92      0.92      3412\n",
   "name": "technological",
   "display_name": "Technological",
   "n_features": 22
