@@ -2,8 +2,8 @@
 
 | Typology | Pre-trained Acc. | CV Accuracy | Classes | Samples |
 |----------|-----------------|-------------|---------|---------|
-| Basic Morphological | 96.1% | 81.3% ± 0.9% | 10 | 3412 |
-| Bordes Typology | 96.1% | 81.3% ± 0.9% | 10 | 3412 |
-| Technological | 92.4% | 71.0% ± 1.1% | 8 | 3412 |
+| Basic Morphological | 96.1% | 80.8% ± 1.0% | 10 | 3415 |
+| Bordes Typology | 96.1% | 80.8% ± 1.0% | 10 | 3415 |
+| Technological | 92.5% | 70.4% ± 0.6% | 8 | 3415 |
 
-_Data: 3412 real-world artefacts, 22 features._
+_Data: 3415 real-world artefacts, 22 features._
