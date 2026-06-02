@@ -103,7 +103,11 @@ def get_labels(rows: list[dict], system: str, lookup: dict) -> list[str]:
                 elif blank_val == "Flake":
                     labels.append("Flake")
                 else:
-                    labels.append("Tool")
+                    # Generic "Tool" without specific blank type — merge into
+                    # Retouched Flake. The basic/bordes distinction between
+                    # "tool" and "retouched flake" is one of degree, not kind,
+                    # and 4 samples is too few for a viable ML class.
+                    labels.append("Retouched Flake")
             elif blank_val == "Blade":
                 labels.append("Blade")
             elif blank_val == "Bladelet":
@@ -141,7 +145,8 @@ def get_labels(rows: list[dict], system: str, lookup: dict) -> list[str]:
             elif blank_val == "Flake":
                 labels.append("Flake")
             elif cls_val == "Tool":
-                labels.append("Tool")
+                # Merge generic "Tool" into Retouched Flake (see basic system)
+                labels.append("Retouched Flake")
             elif csv_typology and system != "technological":
                 labels.append(csv_typology)
             else:

@@ -193,7 +193,7 @@ lithicope/                          # Desktop GUI (PyQt6 + PyVista)
 
 ## Classifier Validation
 
-The classifiers are trained on **3,412 real-world 3D scan meshes** from three continents:
+The classifiers are trained on **3,415 real-world 3D scan meshes** from three continents:
 
 | Data Source | Origin | Artefacts | Scanner |
 |---|---|---|---|
@@ -204,10 +204,10 @@ The classifiers are trained on **3,412 real-world 3D scan meshes** from three co
 | Morales Experimental Retouch | Spain | 100 | Structured light |
 
 | Typology | Classes | 5-Fold CV Accuracy | Training Accuracy |
-|---|---|---|---|
-| Basic Morphological | Biface, Blade, Bladelet, Core, Experimental Core, Flake, Retouched Flake, Tool, Unmodified Cobble, Unmodified Flake | **81.3%** | 96.1% |
-| Bordes Typology | Same morphology-based mapping | **81.3%** | 96.1% |
-| Technological | Handaxe, Initialization, Maintenance, Optimal, Other, Semi-cortical, Undetermined, Unknown | **71.0%** | 92.4% |
+|---|---|---|---|---|
+| Basic Morphological | Biface, Blade, Bladelet, Core, Experimental Core, Flake, Retouched Flake, Unmodified Cobble, Unmodified Flake | **81.6%** | 96.3% |
+| Bordes Typology | Same morphology-based mapping | **81.6%** | 96.3% |
+| Technological | Handaxe, Initialization, Maintenance, Optimal, Other, Semi-cortical, Undetermined, Unknown | **70.4%** | 92.5% |
 
 *Results are 5-fold cross-validation on real archaeological and experimental meshes.
 Run `lithicore benchmark` to generate a full interactive HTML report with confusion

@@ -130,7 +130,8 @@ def get_labels(rows: list[dict], system: str, lookup: dict) -> list[str]:
                 elif blank_val == "Flake":
                     labels.append("Flake")
                 else:
-                    labels.append("Tool")
+                    # Merge generic "Tool" into Retouched Flake (4 samples not viable)
+                    labels.append("Retouched Flake")
             elif blank_val == "Blade":
                 labels.append("Blade")
             elif blank_val == "Bladelet":
@@ -166,7 +167,7 @@ def get_labels(rows: list[dict], system: str, lookup: dict) -> list[str]:
             elif blank_val == "Flake":
                 labels.append("Flake")
             elif cls_val == "Tool":
-                labels.append("Tool")
+                labels.append("Retouched Flake")
             elif csv_typology:
                 labels.append(csv_typology)
             else:
