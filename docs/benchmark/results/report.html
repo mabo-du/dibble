@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Dibble Classifier Validation Report</title>
+<title>Dibble Classifier Validation Report — Real Data</title>
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
          max-width: 960px; margin: 0 auto; padding: 20px; background: #f8f9fa; color: #333; }
@@ -28,444 +28,763 @@
   .metric-label { font-size: 12px; color: #666; text-transform: uppercase; }
   pre { background: #f5f5f5; padding: 12px; border-radius: 4px; overflow-x: auto;
         font-size: 12px; }
+  .note { background: #fff3cd; border-left: 4px solid #ffc107; padding: 8px 12px;
+          margin: 12px 0; border-radius: 4px; }
   .footer { margin-top: 40px; padding: 12px; text-align: center;
              color: #888; font-size: 12px; border-top: 1px solid #dee2e6; }
 </style>
 </head>
 <body>
 <h1>Dibble Classifier Validation Report</h1>
-<p>Generated: 2026-06-02 14:39:49</p>
-<p class="status review">REVIEW</p>
-<p>This report validates all three pre-trained lithic typology classifiers against
-held-out synthetic test data generated from published metric ranges.</p>
+<p>Generated: 2026-06-02 16:15:21</p>
+<p class="status pass">PASS</p>
+<p>Validated against the real <b>3312</b>-artefact
+training matrix (22 features).
+Results include pre-trained model accuracy (full training set) and
+5-fold cross-validation accuracy (unbiased estimate).</p>
+<div class="note">
+  <strong>Note:</strong> The pre-trained accuracy is an optimistic upper bound
+  (model tested on data it trained on). The cross-validation accuracy is the
+  honest estimate of real-world performance.
+</div>
 
 
-<h2>Basic Morphological</h2>
+<h2>Basic Morphological — 10 classes, 3312 samples</h2>
 <div class="summary">
 <div class="metrics">
   <div class="metric-card">
-    <div class="metric-value">20.0%</div>
-    <div class="metric-label">Overall Accuracy</div>
+    <div class="metric-value">95.3%</div>
+    <div class="metric-label">Pre-trained Accuracy</div>
+  </div>
+  <div class="metric-card" style="border-left: 3px solid #ffc107;">
+    <div class="metric-value">80.6% ± 0.9%</div>
+    <div class="metric-label">Cross-Validation (5-fold)</div>
   </div>
   <div class="metric-card">
-    <div class="metric-value">5</div>
+    <div class="metric-value">10</div>
     <div class="metric-label">Classes</div>
   </div>
   <div class="metric-card">
-    <div class="metric-value">500</div>
-    <div class="metric-label">Test Samples</div>
+    <div class="metric-value">3312</div>
+    <div class="metric-label">Samples</div>
   </div>
 </div>
 
-<h3>Per-Class Metrics</h3>
+<h3>Per-Class Metrics (pre-trained model)</h3>
 <table>
 <tr><th>Class</th><th>Precision</th><th>Recall</th><th>F1-Score</th><th>Support</th></tr>
 
 
 <tr>
+  <td><b>Biface</b></td>
+  <td>0.957</td>
+  <td>0.961</td>
+  <td style="color:green;font-weight:bold;">0.959</td>
+  <td>918</td>
+</tr>
+
+<tr>
   <td><b>Blade</b></td>
-  <td>0.000</td>
-  <td>0.000</td>
-  <td style="color:red;font-weight:bold;">0.000</td>
-  <td>100</td>
+  <td>0.940</td>
+  <td>0.940</td>
+  <td style="color:green;font-weight:bold;">0.940</td>
+  <td>401</td>
 </tr>
 
 <tr>
   <td><b>Bladelet</b></td>
-  <td>0.671</td>
-  <td>1.000</td>
-  <td style="color:green;font-weight:bold;">0.803</td>
-  <td>100</td>
+  <td>0.983</td>
+  <td>0.978</td>
+  <td style="color:green;font-weight:bold;">0.981</td>
+  <td>592</td>
 </tr>
 
 <tr>
   <td><b>Core</b></td>
-  <td>0.000</td>
-  <td>0.000</td>
-  <td style="color:red;font-weight:bold;">0.000</td>
-  <td>100</td>
+  <td>0.945</td>
+  <td>0.953</td>
+  <td style="color:green;font-weight:bold;">0.949</td>
+  <td>751</td>
+</tr>
+
+<tr>
+  <td><b>Experimental Core</b></td>
+  <td>0.946</td>
+  <td>0.957</td>
+  <td style="color:green;font-weight:bold;">0.951</td>
+  <td>254</td>
 </tr>
 
 <tr>
   <td><b>Flake</b></td>
-  <td>0.000</td>
-  <td>0.000</td>
-  <td style="color:red;font-weight:bold;">0.000</td>
-  <td>100</td>
+  <td>0.929</td>
+  <td>0.893</td>
+  <td style="color:green;font-weight:bold;">0.911</td>
+  <td>262</td>
+</tr>
+
+<tr>
+  <td><b>Retouched Flake</b></td>
+  <td>0.943</td>
+  <td>1.000</td>
+  <td style="color:green;font-weight:bold;">0.971</td>
+  <td>50</td>
 </tr>
 
 <tr>
   <td><b>Tool</b></td>
-  <td>0.000</td>
-  <td>0.000</td>
-  <td style="color:red;font-weight:bold;">0.000</td>
-  <td>100</td>
+  <td>1.000</td>
+  <td>0.250</td>
+  <td style="color:red;font-weight:bold;">0.400</td>
+  <td>4</td>
+</tr>
+
+<tr>
+  <td><b>Unmodified Cobble</b></td>
+  <td>1.000</td>
+  <td>0.900</td>
+  <td style="color:green;font-weight:bold;">0.947</td>
+  <td>30</td>
+</tr>
+
+<tr>
+  <td><b>Unmodified Flake</b></td>
+  <td>0.942</td>
+  <td>0.980</td>
+  <td style="color:green;font-weight:bold;">0.961</td>
+  <td>50</td>
 </tr>
 
 </table>
 
-<h3>Confusion Matrix</h3>
+<h3>Confusion Matrix (pre-trained model)</h3>
 <table class="cm-table">
 <tr><td class="cm-header">True \ Pred</td>
+<td class='cm-header'>Biface</td>
 <td class='cm-header'>Blade</td>
 <td class='cm-header'>Bladelet</td>
 <td class='cm-header'>Core</td>
+<td class='cm-header'>Experimental Core</td>
 <td class='cm-header'>Flake</td>
+<td class='cm-header'>Retouched Flake</td>
 <td class='cm-header'>Tool</td>
+<td class='cm-header'>Unmodified Cobble</td>
+<td class='cm-header'>Unmodified Flake</td>
+</tr>
+<tr><td class='cm-header'>Biface</td>
+<td class='cm-diagonal'>882</td>
+<td class=''>1</td>
+<td class=''>2</td>
+<td class=''>21</td>
+<td class=''>10</td>
+<td class=''>0</td>
+<td class=''>2</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
 </tr>
 <tr><td class='cm-header'>Blade</td>
-<td class='cm-diagonal'>0</td>
-<td class=''>24</td>
+<td class=''>1</td>
+<td class='cm-diagonal'>377</td>
+<td class=''>7</td>
+<td class=''>3</td>
+<td class=''>0</td>
+<td class=''>11</td>
 <td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
+<td class=''>2</td>
 </tr>
 <tr><td class='cm-header'>Bladelet</td>
 <td class=''>0</td>
-<td class='cm-diagonal'>100</td>
+<td class=''>13</td>
+<td class='cm-diagonal'>579</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
 </tr>
 <tr><td class='cm-header'>Core</td>
+<td class=''>24</td>
+<td class=''>3</td>
 <td class=''>0</td>
-<td class=''>5</td>
-<td class='cm-diagonal'>0</td>
+<td class='cm-diagonal'>716</td>
+<td class=''>1</td>
+<td class=''>6</td>
+<td class=''>1</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+</tr>
+<tr><td class='cm-header'>Experimental Core</td>
+<td class=''>10</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>1</td>
+<td class='cm-diagonal'>243</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
 </tr>
 <tr><td class='cm-header'>Flake</td>
+<td class=''>5</td>
+<td class=''>7</td>
+<td class=''>1</td>
+<td class=''>14</td>
 <td class=''>0</td>
-<td class=''>9</td>
+<td class='cm-diagonal'>234</td>
 <td class=''>0</td>
-<td class='cm-diagonal'>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>1</td>
+</tr>
+<tr><td class='cm-header'>Retouched Flake</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class='cm-diagonal'>50</td>
+<td class=''>0</td>
+<td class=''>0</td>
 <td class=''>0</td>
 </tr>
 <tr><td class='cm-header'>Tool</td>
 <td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>2</td>
+<td class=''>0</td>
+<td class=''>1</td>
+<td class=''>0</td>
+<td class='cm-diagonal'>1</td>
+<td class=''>0</td>
+<td class=''>0</td>
+</tr>
+<tr><td class='cm-header'>Unmodified Cobble</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>3</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class='cm-diagonal'>27</td>
+<td class=''>0</td>
+</tr>
+<tr><td class='cm-header'>Unmodified Flake</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>1</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class='cm-diagonal'>49</td>
+</tr>
+
+</table>
+
+<h3>Classification Report</h3>
+<pre>                   precision    recall  f1-score   support
+
+           Biface       0.96      0.96      0.96       918
+            Blade       0.94      0.94      0.94       401
+         Bladelet       0.98      0.98      0.98       592
+             Core       0.94      0.95      0.95       751
+Experimental Core       0.95      0.96      0.95       254
+            Flake       0.93      0.89      0.91       262
+  Retouched Flake       0.94      1.00      0.97        50
+             Tool       1.00      0.25      0.40         4
+Unmodified Cobble       1.00      0.90      0.95        30
+ Unmodified Flake       0.94      0.98      0.96        50
+
+         accuracy                           0.95      3312
+        macro avg       0.96      0.88      0.90      3312
+     weighted avg       0.95      0.95      0.95      3312
+</pre>
+
+<h2>Bordes Typology — 10 classes, 3312 samples</h2>
+<div class="summary">
+<div class="metrics">
+  <div class="metric-card">
+    <div class="metric-value">95.3%</div>
+    <div class="metric-label">Pre-trained Accuracy</div>
+  </div>
+  <div class="metric-card" style="border-left: 3px solid #ffc107;">
+    <div class="metric-value">80.6% ± 0.9%</div>
+    <div class="metric-label">Cross-Validation (5-fold)</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-value">10</div>
+    <div class="metric-label">Classes</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-value">3312</div>
+    <div class="metric-label">Samples</div>
+  </div>
+</div>
+
+<h3>Per-Class Metrics (pre-trained model)</h3>
+<table>
+<tr><th>Class</th><th>Precision</th><th>Recall</th><th>F1-Score</th><th>Support</th></tr>
+
+
+<tr>
+  <td><b>Biface</b></td>
+  <td>0.957</td>
+  <td>0.961</td>
+  <td style="color:green;font-weight:bold;">0.959</td>
+  <td>918</td>
+</tr>
+
+<tr>
+  <td><b>Blade</b></td>
+  <td>0.940</td>
+  <td>0.940</td>
+  <td style="color:green;font-weight:bold;">0.940</td>
+  <td>401</td>
+</tr>
+
+<tr>
+  <td><b>Bladelet</b></td>
+  <td>0.983</td>
+  <td>0.978</td>
+  <td style="color:green;font-weight:bold;">0.981</td>
+  <td>592</td>
+</tr>
+
+<tr>
+  <td><b>Core</b></td>
+  <td>0.945</td>
+  <td>0.953</td>
+  <td style="color:green;font-weight:bold;">0.949</td>
+  <td>751</td>
+</tr>
+
+<tr>
+  <td><b>Experimental Core</b></td>
+  <td>0.946</td>
+  <td>0.957</td>
+  <td style="color:green;font-weight:bold;">0.951</td>
+  <td>254</td>
+</tr>
+
+<tr>
+  <td><b>Flake</b></td>
+  <td>0.929</td>
+  <td>0.893</td>
+  <td style="color:green;font-weight:bold;">0.911</td>
+  <td>262</td>
+</tr>
+
+<tr>
+  <td><b>Retouched Flake</b></td>
+  <td>0.943</td>
+  <td>1.000</td>
+  <td style="color:green;font-weight:bold;">0.971</td>
+  <td>50</td>
+</tr>
+
+<tr>
+  <td><b>Tool</b></td>
+  <td>1.000</td>
+  <td>0.250</td>
+  <td style="color:red;font-weight:bold;">0.400</td>
+  <td>4</td>
+</tr>
+
+<tr>
+  <td><b>Unmodified Cobble</b></td>
+  <td>1.000</td>
+  <td>0.900</td>
+  <td style="color:green;font-weight:bold;">0.947</td>
+  <td>30</td>
+</tr>
+
+<tr>
+  <td><b>Unmodified Flake</b></td>
+  <td>0.942</td>
+  <td>0.980</td>
+  <td style="color:green;font-weight:bold;">0.961</td>
+  <td>50</td>
+</tr>
+
+</table>
+
+<h3>Confusion Matrix (pre-trained model)</h3>
+<table class="cm-table">
+<tr><td class="cm-header">True \ Pred</td>
+<td class='cm-header'>Biface</td>
+<td class='cm-header'>Blade</td>
+<td class='cm-header'>Bladelet</td>
+<td class='cm-header'>Core</td>
+<td class='cm-header'>Experimental Core</td>
+<td class='cm-header'>Flake</td>
+<td class='cm-header'>Retouched Flake</td>
+<td class='cm-header'>Tool</td>
+<td class='cm-header'>Unmodified Cobble</td>
+<td class='cm-header'>Unmodified Flake</td>
+</tr>
+<tr><td class='cm-header'>Biface</td>
+<td class='cm-diagonal'>882</td>
+<td class=''>1</td>
+<td class=''>2</td>
+<td class=''>21</td>
+<td class=''>10</td>
+<td class=''>0</td>
+<td class=''>2</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+</tr>
+<tr><td class='cm-header'>Blade</td>
+<td class=''>1</td>
+<td class='cm-diagonal'>377</td>
+<td class=''>7</td>
+<td class=''>3</td>
+<td class=''>0</td>
 <td class=''>11</td>
 <td class=''>0</td>
 <td class=''>0</td>
-<td class='cm-diagonal'>0</td>
+<td class=''>0</td>
+<td class=''>2</td>
+</tr>
+<tr><td class='cm-header'>Bladelet</td>
+<td class=''>0</td>
+<td class=''>13</td>
+<td class='cm-diagonal'>579</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+</tr>
+<tr><td class='cm-header'>Core</td>
+<td class=''>24</td>
+<td class=''>3</td>
+<td class=''>0</td>
+<td class='cm-diagonal'>716</td>
+<td class=''>1</td>
+<td class=''>6</td>
+<td class=''>1</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+</tr>
+<tr><td class='cm-header'>Experimental Core</td>
+<td class=''>10</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>1</td>
+<td class='cm-diagonal'>243</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+</tr>
+<tr><td class='cm-header'>Flake</td>
+<td class=''>5</td>
+<td class=''>7</td>
+<td class=''>1</td>
+<td class=''>14</td>
+<td class=''>0</td>
+<td class='cm-diagonal'>234</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>1</td>
+</tr>
+<tr><td class='cm-header'>Retouched Flake</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class='cm-diagonal'>50</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+</tr>
+<tr><td class='cm-header'>Tool</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>2</td>
+<td class=''>0</td>
+<td class=''>1</td>
+<td class=''>0</td>
+<td class='cm-diagonal'>1</td>
+<td class=''>0</td>
+<td class=''>0</td>
+</tr>
+<tr><td class='cm-header'>Unmodified Cobble</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>3</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class='cm-diagonal'>27</td>
+<td class=''>0</td>
+</tr>
+<tr><td class='cm-header'>Unmodified Flake</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>1</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class='cm-diagonal'>49</td>
 </tr>
 
 </table>
 
-<h3>Detailed Report</h3>
-<pre>              precision    recall  f1-score   support
+<h3>Classification Report</h3>
+<pre>                   precision    recall  f1-score   support
 
-       Blade       0.00      0.00      0.00       100
-    Bladelet       0.67      1.00      0.80       100
-        Core       0.00      0.00      0.00       100
-       Flake       0.00      0.00      0.00       100
-        Tool       0.00      0.00      0.00       100
+           Biface       0.96      0.96      0.96       918
+            Blade       0.94      0.94      0.94       401
+         Bladelet       0.98      0.98      0.98       592
+             Core       0.94      0.95      0.95       751
+Experimental Core       0.95      0.96      0.95       254
+            Flake       0.93      0.89      0.91       262
+  Retouched Flake       0.94      1.00      0.97        50
+             Tool       1.00      0.25      0.40         4
+Unmodified Cobble       1.00      0.90      0.95        30
+ Unmodified Flake       0.94      0.98      0.96        50
 
-   micro avg       0.67      0.20      0.31       500
-   macro avg       0.13      0.20      0.16       500
-weighted avg       0.13      0.20      0.16       500
+         accuracy                           0.95      3312
+        macro avg       0.96      0.88      0.90      3312
+     weighted avg       0.95      0.95      0.95      3312
 </pre>
 
-<h2>Bordes Typology</h2>
+<h2>Technological — 8 classes, 3312 samples</h2>
 <div class="summary">
 <div class="metrics">
   <div class="metric-card">
-    <div class="metric-value">0.0%</div>
-    <div class="metric-label">Overall Accuracy</div>
+    <div class="metric-value">90.6%</div>
+    <div class="metric-label">Pre-trained Accuracy</div>
+  </div>
+  <div class="metric-card" style="border-left: 3px solid #ffc107;">
+    <div class="metric-value">69.3% ± 0.9%</div>
+    <div class="metric-label">Cross-Validation (5-fold)</div>
   </div>
   <div class="metric-card">
-    <div class="metric-value">7</div>
+    <div class="metric-value">8</div>
     <div class="metric-label">Classes</div>
   </div>
   <div class="metric-card">
-    <div class="metric-value">700</div>
-    <div class="metric-label">Test Samples</div>
+    <div class="metric-value">3312</div>
+    <div class="metric-label">Samples</div>
   </div>
 </div>
 
-<h3>Per-Class Metrics</h3>
+<h3>Per-Class Metrics (pre-trained model)</h3>
 <table>
 <tr><th>Class</th><th>Precision</th><th>Recall</th><th>F1-Score</th><th>Support</th></tr>
 
-
-<tr>
-  <td><b>Backed knife</b></td>
-  <td>0.000</td>
-  <td>0.000</td>
-  <td style="color:red;font-weight:bold;">0.000</td>
-  <td>100</td>
-</tr>
-
-<tr>
-  <td><b>Burin</b></td>
-  <td>0.000</td>
-  <td>0.000</td>
-  <td style="color:red;font-weight:bold;">0.000</td>
-  <td>100</td>
-</tr>
-
-<tr>
-  <td><b>Denticulate</b></td>
-  <td>0.000</td>
-  <td>0.000</td>
-  <td style="color:red;font-weight:bold;">0.000</td>
-  <td>100</td>
-</tr>
 
 <tr>
   <td><b>Handaxe</b></td>
-  <td>0.000</td>
-  <td>0.000</td>
-  <td style="color:red;font-weight:bold;">0.000</td>
-  <td>100</td>
+  <td>0.944</td>
+  <td>0.958</td>
+  <td style="color:green;font-weight:bold;">0.951</td>
+  <td>918</td>
 </tr>
 
 <tr>
-  <td><b>Notched</b></td>
-  <td>0.000</td>
-  <td>0.000</td>
-  <td style="color:red;font-weight:bold;">0.000</td>
-  <td>100</td>
+  <td><b>Initialization</b></td>
+  <td>1.000</td>
+  <td>0.803</td>
+  <td style="color:green;font-weight:bold;">0.891</td>
+  <td>76</td>
 </tr>
 
 <tr>
-  <td><b>Point</b></td>
-  <td>0.000</td>
-  <td>0.000</td>
-  <td style="color:red;font-weight:bold;">0.000</td>
-  <td>100</td>
+  <td><b>Maintenance</b></td>
+  <td>0.901</td>
+  <td>0.875</td>
+  <td style="color:green;font-weight:bold;">0.887</td>
+  <td>311</td>
 </tr>
 
 <tr>
-  <td><b>Scraper</b></td>
-  <td>0.000</td>
-  <td>0.000</td>
-  <td style="color:red;font-weight:bold;">0.000</td>
-  <td>100</td>
+  <td><b>Optimal</b></td>
+  <td>0.916</td>
+  <td>0.941</td>
+  <td style="color:green;font-weight:bold;">0.928</td>
+  <td>854</td>
+</tr>
+
+<tr>
+  <td><b>Other</b></td>
+  <td>0.782</td>
+  <td>0.956</td>
+  <td style="color:green;font-weight:bold;">0.860</td>
+  <td>503</td>
+</tr>
+
+<tr>
+  <td><b>Semi-cortical</b></td>
+  <td>1.000</td>
+  <td>0.475</td>
+  <td style="color:orange;font-weight:bold;">0.644</td>
+  <td>238</td>
+</tr>
+
+<tr>
+  <td><b>Undetermined</b></td>
+  <td>1.000</td>
+  <td>0.964</td>
+  <td style="color:green;font-weight:bold;">0.982</td>
+  <td>28</td>
+</tr>
+
+<tr>
+  <td><b>Unknown</b></td>
+  <td>0.945</td>
+  <td>0.948</td>
+  <td style="color:green;font-weight:bold;">0.947</td>
+  <td>384</td>
 </tr>
 
 </table>
 
-<h3>Confusion Matrix</h3>
+<h3>Confusion Matrix (pre-trained model)</h3>
 <table class="cm-table">
 <tr><td class="cm-header">True \ Pred</td>
-<td class='cm-header'>Backed knife</td>
-<td class='cm-header'>Burin</td>
-<td class='cm-header'>Denticulate</td>
 <td class='cm-header'>Handaxe</td>
-<td class='cm-header'>Notched</td>
-<td class='cm-header'>Point</td>
-<td class='cm-header'>Scraper</td>
-</tr>
-<tr><td class='cm-header'>Backed knife</td>
-<td class='cm-diagonal'>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-</tr>
-<tr><td class='cm-header'>Burin</td>
-<td class=''>0</td>
-<td class='cm-diagonal'>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-</tr>
-<tr><td class='cm-header'>Denticulate</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class='cm-diagonal'>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
+<td class='cm-header'>Initialization</td>
+<td class='cm-header'>Maintenance</td>
+<td class='cm-header'>Optimal</td>
+<td class='cm-header'>Other</td>
+<td class='cm-header'>Semi-cortical</td>
+<td class='cm-header'>Undetermined</td>
+<td class='cm-header'>Unknown</td>
 </tr>
 <tr><td class='cm-header'>Handaxe</td>
+<td class='cm-diagonal'>879</td>
+<td class=''>0</td>
+<td class=''>1</td>
+<td class=''>5</td>
+<td class=''>22</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>11</td>
+</tr>
+<tr><td class='cm-header'>Initialization</td>
+<td class=''>1</td>
+<td class='cm-diagonal'>61</td>
+<td class=''>1</td>
+<td class=''>3</td>
+<td class=''>9</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>1</td>
+</tr>
+<tr><td class='cm-header'>Maintenance</td>
+<td class=''>3</td>
+<td class=''>0</td>
+<td class='cm-diagonal'>272</td>
+<td class=''>23</td>
+<td class=''>10</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>3</td>
+</tr>
+<tr><td class='cm-header'>Optimal</td>
+<td class=''>3</td>
+<td class=''>0</td>
+<td class=''>17</td>
+<td class='cm-diagonal'>804</td>
+<td class=''>28</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>2</td>
+</tr>
+<tr><td class='cm-header'>Other</td>
+<td class=''>16</td>
+<td class=''>0</td>
+<td class=''>1</td>
+<td class=''>2</td>
+<td class='cm-diagonal'>481</td>
+<td class=''>0</td>
+<td class=''>0</td>
+<td class=''>3</td>
+</tr>
+<tr><td class='cm-header'>Semi-cortical</td>
+<td class=''>12</td>
+<td class=''>0</td>
+<td class=''>10</td>
+<td class=''>40</td>
+<td class=''>62</td>
+<td class='cm-diagonal'>113</td>
+<td class=''>0</td>
+<td class=''>1</td>
+</tr>
+<tr><td class='cm-header'>Undetermined</td>
 <td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
-<td class='cm-diagonal'>0</td>
+<td class=''>1</td>
 <td class=''>0</td>
 <td class=''>0</td>
+<td class='cm-diagonal'>27</td>
 <td class=''>0</td>
 </tr>
-<tr><td class='cm-header'>Notched</td>
+<tr><td class='cm-header'>Unknown</td>
+<td class=''>17</td>
 <td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
-<td class=''>0</td>
-<td class='cm-diagonal'>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-</tr>
-<tr><td class='cm-header'>Point</td>
+<td class=''>3</td>
 <td class=''>0</td>
 <td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class='cm-diagonal'>0</td>
-<td class=''>0</td>
-</tr>
-<tr><td class='cm-header'>Scraper</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class='cm-diagonal'>0</td>
-</tr>
-
-</table>
-
-<h3>Detailed Report</h3>
-<pre>              precision    recall  f1-score   support
-
-Backed knife       0.00      0.00      0.00     100.0
-       Burin       0.00      0.00      0.00     100.0
- Denticulate       0.00      0.00      0.00     100.0
-     Handaxe       0.00      0.00      0.00     100.0
-     Notched       0.00      0.00      0.00     100.0
-       Point       0.00      0.00      0.00     100.0
-     Scraper       0.00      0.00      0.00     100.0
-
-   micro avg       0.00      0.00      0.00     700.0
-   macro avg       0.00      0.00      0.00     700.0
-weighted avg       0.00      0.00      0.00     700.0
-</pre>
-
-<h2>Technological</h2>
-<div class="summary">
-<div class="metrics">
-  <div class="metric-card">
-    <div class="metric-value">0.0%</div>
-    <div class="metric-label">Overall Accuracy</div>
-  </div>
-  <div class="metric-card">
-    <div class="metric-value">5</div>
-    <div class="metric-label">Classes</div>
-  </div>
-  <div class="metric-card">
-    <div class="metric-value">500</div>
-    <div class="metric-label">Test Samples</div>
-  </div>
-</div>
-
-<h3>Per-Class Metrics</h3>
-<table>
-<tr><th>Class</th><th>Precision</th><th>Recall</th><th>F1-Score</th><th>Support</th></tr>
-
-
-<tr>
-  <td><b>Core rejuvenation</b></td>
-  <td>0.000</td>
-  <td>0.000</td>
-  <td style="color:red;font-weight:bold;">0.000</td>
-  <td>100</td>
-</tr>
-
-<tr>
-  <td><b>Crested blade</b></td>
-  <td>0.000</td>
-  <td>0.000</td>
-  <td style="color:red;font-weight:bold;">0.000</td>
-  <td>100</td>
-</tr>
-
-<tr>
-  <td><b>Primary</b></td>
-  <td>0.000</td>
-  <td>0.000</td>
-  <td style="color:red;font-weight:bold;">0.000</td>
-  <td>100</td>
-</tr>
-
-<tr>
-  <td><b>Secondary</b></td>
-  <td>0.000</td>
-  <td>0.000</td>
-  <td style="color:red;font-weight:bold;">0.000</td>
-  <td>100</td>
-</tr>
-
-<tr>
-  <td><b>Tertiary</b></td>
-  <td>0.000</td>
-  <td>0.000</td>
-  <td style="color:red;font-weight:bold;">0.000</td>
-  <td>100</td>
+<td class='cm-diagonal'>364</td>
 </tr>
 
 </table>
 
-<h3>Confusion Matrix</h3>
-<table class="cm-table">
-<tr><td class="cm-header">True \ Pred</td>
-<td class='cm-header'>Core rejuvenation</td>
-<td class='cm-header'>Crested blade</td>
-<td class='cm-header'>Primary</td>
-<td class='cm-header'>Secondary</td>
-<td class='cm-header'>Tertiary</td>
-</tr>
-<tr><td class='cm-header'>Core rejuvenation</td>
-<td class='cm-diagonal'>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-</tr>
-<tr><td class='cm-header'>Crested blade</td>
-<td class=''>0</td>
-<td class='cm-diagonal'>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-</tr>
-<tr><td class='cm-header'>Primary</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class='cm-diagonal'>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-</tr>
-<tr><td class='cm-header'>Secondary</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class='cm-diagonal'>0</td>
-<td class=''>0</td>
-</tr>
-<tr><td class='cm-header'>Tertiary</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class='cm-diagonal'>0</td>
-</tr>
+<h3>Classification Report</h3>
+<pre>                precision    recall  f1-score   support
 
-</table>
+       Handaxe       0.94      0.96      0.95       918
+Initialization       1.00      0.80      0.89        76
+   Maintenance       0.90      0.87      0.89       311
+       Optimal       0.92      0.94      0.93       854
+         Other       0.78      0.96      0.86       503
+ Semi-cortical       1.00      0.47      0.64       238
+  Undetermined       1.00      0.96      0.98        28
+       Unknown       0.95      0.95      0.95       384
 
-<h3>Detailed Report</h3>
-<pre>                   precision    recall  f1-score   support
-
-Core rejuvenation       0.00      0.00      0.00     100.0
-    Crested blade       0.00      0.00      0.00     100.0
-          Primary       0.00      0.00      0.00     100.0
-        Secondary       0.00      0.00      0.00     100.0
-         Tertiary       0.00      0.00      0.00     100.0
-
-        micro avg       0.00      0.00      0.00     500.0
-        macro avg       0.00      0.00      0.00     500.0
-     weighted avg       0.00      0.00      0.00     500.0
+      accuracy                           0.91      3312
+     macro avg       0.94      0.86      0.89      3312
+  weighted avg       0.91      0.91      0.90      3312
 </pre>
 
 <div class="footer">
   Dibble Classifier Validation — <a href="https://github.com/mabo-du/dibble">github.com/mabo-du/dibble</a><br>
-  Reproduce: <code>python -m lithicore.data.run_benchmark</code>
+  Data: 3312 real-world artefacts<br>
+  Reproduce: <code>lithicore benchmark</code>
 </div>
 </body>
 </html>

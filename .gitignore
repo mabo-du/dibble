@@ -10,7 +10,8 @@ build/
 .gitnexus
 
 # Generated training data — CSVs, raw meshes, ZIP archives from Zenodo downloads
-lithicore/data/training/raw/
+# (symlink to /data/dibble-training/raw — recreate if missing)
+lithicore/data/training/raw
 
 # Benchmark output artifacts (reproducible via `lithicore benchmark`)
 docs/benchmark/results/*.html

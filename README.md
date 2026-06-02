@@ -205,13 +205,13 @@ The classifiers are trained on **3,312 real-world 3D scan meshes** from three co
 
 | Typology | Classes | 5-Fold CV Accuracy | Training Accuracy |
 |---|---|---|---|
-| Basic Morphological | Biface, Blade, Bladelet, Core, Experimental Core, Flake, Retouched Flake, Tool, Unmodified Cobble, Unmodified Flake | **79.2%** | 95.4% |
-| Bordes Typology | Same morphology-based mapping | **79.2%** | 95.4% |
-| Technological | Handaxe, Initialization, Maintenance, Optimal, Other, Semi-cortical, Undetermined, Unknown | **65.4%** | 90.6% |
+| Basic Morphological | Biface, Blade, Bladelet, Core, Experimental Core, Flake, Retouched Flake, Tool, Unmodified Cobble, Unmodified Flake | **80.6%** | 95.3% |
+| Bordes Typology | Same morphology-based mapping | **80.6%** | 95.3% |
+| Technological | Handaxe, Initialization, Maintenance, Optimal, Other, Semi-cortical, Undetermined, Unknown | **69.3%** | 90.6% |
 
 *Results are 5-fold cross-validation on real archaeological and experimental meshes.
-Run `lithicore data/training/retrain.py` to retrain all classifiers, then run
-`lithicore benchmark` to view confusion matrices and per-class scores.*
+Run `lithicore benchmark` to generate a full interactive HTML report with confusion
+matrices, per-class precision/recall/F1 scores, and cross-validation accuracy.*
 
 ---
 

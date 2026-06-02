@@ -1,89 +1,159 @@
 {
-  "name": "technological",
-  "display_name": "Technological",
-  "n_classes": 5,
-  "n_test_samples": 500,
-  "accuracy": 0.0,
+  "accuracy": 0.9061,
   "per_class": [
     {
-      "class": "Core rejuvenation",
-      "precision": 0.0,
-      "recall": 0.0,
-      "f1": 0.0,
-      "support": 100
+      "class": "Handaxe",
+      "precision": 0.944,
+      "recall": 0.958,
+      "f1": 0.951,
+      "support": 918
     },
     {
-      "class": "Crested blade",
-      "precision": 0.0,
-      "recall": 0.0,
-      "f1": 0.0,
-      "support": 100
+      "class": "Initialization",
+      "precision": 1.0,
+      "recall": 0.803,
+      "f1": 0.891,
+      "support": 76
     },
     {
-      "class": "Primary",
-      "precision": 0.0,
-      "recall": 0.0,
-      "f1": 0.0,
-      "support": 100
+      "class": "Maintenance",
+      "precision": 0.901,
+      "recall": 0.875,
+      "f1": 0.887,
+      "support": 311
     },
     {
-      "class": "Secondary",
-      "precision": 0.0,
-      "recall": 0.0,
-      "f1": 0.0,
-      "support": 100
+      "class": "Optimal",
+      "precision": 0.916,
+      "recall": 0.941,
+      "f1": 0.928,
+      "support": 854
     },
     {
-      "class": "Tertiary",
-      "precision": 0.0,
-      "recall": 0.0,
-      "f1": 0.0,
-      "support": 100
+      "class": "Other",
+      "precision": 0.782,
+      "recall": 0.956,
+      "f1": 0.86,
+      "support": 503
+    },
+    {
+      "class": "Semi-cortical",
+      "precision": 1.0,
+      "recall": 0.475,
+      "f1": 0.644,
+      "support": 238
+    },
+    {
+      "class": "Undetermined",
+      "precision": 1.0,
+      "recall": 0.964,
+      "f1": 0.982,
+      "support": 28
+    },
+    {
+      "class": "Unknown",
+      "precision": 0.945,
+      "recall": 0.948,
+      "f1": 0.947,
+      "support": 384
     }
   ],
   "confusion_matrix": [
     [
+      879,
+      0,
+      1,
+      5,
+      22,
       0,
       0,
+      11
+    ],
+    [
+      1,
+      61,
+      1,
+      3,
+      9,
       0,
       0,
-      0
+      1
+    ],
+    [
+      3,
+      0,
+      272,
+      23,
+      10,
+      0,
+      0,
+      3
+    ],
+    [
+      3,
+      0,
+      17,
+      804,
+      28,
+      0,
+      0,
+      2
+    ],
+    [
+      16,
+      0,
+      1,
+      2,
+      481,
+      0,
+      0,
+      3
+    ],
+    [
+      12,
+      0,
+      10,
+      40,
+      62,
+      113,
+      0,
+      1
     ],
     [
       0,
       0,
       0,
+      1,
       0,
+      0,
+      27,
       0
     ],
     [
+      17,
       0,
       0,
       0,
-      0,
-      0
-    ],
-    [
+      3,
       0,
       0,
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0,
-      0,
-      0
+      364
     ]
   ],
   "classes": [
-    "Core rejuvenation",
-    "Crested blade",
-    "Primary",
-    "Secondary",
-    "Tertiary"
+    "Handaxe",
+    "Initialization",
+    "Maintenance",
+    "Optimal",
+    "Other",
+    "Semi-cortical",
+    "Undetermined",
+    "Unknown"
   ],
-  "classification_report": "                   precision    recall  f1-score   support\n\nCore rejuvenation       0.00      0.00      0.00     100.0\n    Crested blade       0.00      0.00      0.00     100.0\n          Primary       0.00      0.00      0.00     100.0\n        Secondary       0.00      0.00      0.00     100.0\n         Tertiary       0.00      0.00      0.00     100.0\n\n        micro avg       0.00      0.00      0.00     500.0\n        macro avg       0.00      0.00      0.00     500.0\n     weighted avg       0.00      0.00      0.00     500.0\n"
+  "n_samples": 3312,
+  "n_classes": 8,
+  "classification_report": "                precision    recall  f1-score   support\n\n       Handaxe       0.94      0.96      0.95       918\nInitialization       1.00      0.80      0.89        76\n   Maintenance       0.90      0.87      0.89       311\n       Optimal       0.92      0.94      0.93       854\n         Other       0.78      0.96      0.86       503\n Semi-cortical       1.00      0.47      0.64       238\n  Undetermined       1.00      0.96      0.98        28\n       Unknown       0.95      0.95      0.95       384\n\n      accuracy                           0.91      3312\n     macro avg       0.94      0.86      0.89      3312\n  weighted avg       0.91      0.91      0.90      3312\n",
+  "name": "technological",
+  "display_name": "Technological",
+  "n_features": 22
 }

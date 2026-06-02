@@ -202,11 +202,15 @@ def benchmark(
 ) -> None:
     """Run the classifier validation benchmark and generate a report.
 
-    Tests all pre-trained lithic classifiers against held-out synthetic data
-    and generates an interactive HTML validation report with confusion matrices,
-    per-class metrics, and accuracy scores.
+    Loads the real 3,312-artefact training matrix, runs all three pre-trained
+    classifiers, and generates an interactive HTML validation report with
+    confusion matrices, per-class precision/recall/F1, and cross-validation
+    accuracy scores. OOM-safe — processes one typology at a time.
     """
     typer.echo("Running Dibble classifier validation benchmark...")
+    # Run via subprocess so the benchmark script runs standalone with its own
+    # memory space. This is intentional: each typology's model is loaded,
+    # evaluated, and freed independently for OOM safety.
     import subprocess
     import sys
     benchmark_script = Path(__file__).resolve().parent.parent.parent / "data" / "run_benchmark.py"

@@ -1,11 +1,10 @@
 {
-  "n_test_per_class": 100,
-  "noise_level": 0.2,
-  "seed": 20260527,
-  "benchmark_date": "2026-06-02T14:37:17.132551",
+  "benchmark_date": "2026-06-02T16:15:21.631314",
   "classifiers": [
     "basic",
     "bordes",
     "technological"
-  ]
+  ],
+  "n_artefacts": 3312,
+  "n_features": 22
 }

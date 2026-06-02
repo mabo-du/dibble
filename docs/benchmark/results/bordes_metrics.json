@@ -1,62 +1,106 @@
 {
-  "name": "bordes",
-  "display_name": "Bordes Typology",
-  "n_classes": 7,
-  "n_test_samples": 700,
-  "accuracy": 0.0,
+  "accuracy": 0.9535,
   "per_class": [
     {
-      "class": "Backed knife",
-      "precision": 0.0,
-      "recall": 0.0,
-      "f1": 0.0,
-      "support": 100
+      "class": "Biface",
+      "precision": 0.957,
+      "recall": 0.961,
+      "f1": 0.959,
+      "support": 918
     },
     {
-      "class": "Burin",
-      "precision": 0.0,
-      "recall": 0.0,
-      "f1": 0.0,
-      "support": 100
+      "class": "Blade",
+      "precision": 0.94,
+      "recall": 0.94,
+      "f1": 0.94,
+      "support": 401
     },
     {
-      "class": "Denticulate",
-      "precision": 0.0,
-      "recall": 0.0,
-      "f1": 0.0,
-      "support": 100
+      "class": "Bladelet",
+      "precision": 0.983,
+      "recall": 0.978,
+      "f1": 0.981,
+      "support": 592
     },
     {
-      "class": "Handaxe",
-      "precision": 0.0,
-      "recall": 0.0,
-      "f1": 0.0,
-      "support": 100
+      "class": "Core",
+      "precision": 0.945,
+      "recall": 0.953,
+      "f1": 0.949,
+      "support": 751
     },
     {
-      "class": "Notched",
-      "precision": 0.0,
-      "recall": 0.0,
-      "f1": 0.0,
-      "support": 100
+      "class": "Experimental Core",
+      "precision": 0.946,
+      "recall": 0.957,
+      "f1": 0.951,
+      "support": 254
     },
     {
-      "class": "Point",
-      "precision": 0.0,
-      "recall": 0.0,
-      "f1": 0.0,
-      "support": 100
+      "class": "Flake",
+      "precision": 0.929,
+      "recall": 0.893,
+      "f1": 0.911,
+      "support": 262
     },
     {
-      "class": "Scraper",
-      "precision": 0.0,
-      "recall": 0.0,
-      "f1": 0.0,
-      "support": 100
+      "class": "Retouched Flake",
+      "precision": 0.943,
+      "recall": 1.0,
+      "f1": 0.971,
+      "support": 50
+    },
+    {
+      "class": "Tool",
+      "precision": 1.0,
+      "recall": 0.25,
+      "f1": 0.4,
+      "support": 4
+    },
+    {
+      "class": "Unmodified Cobble",
+      "precision": 1.0,
+      "recall": 0.9,
+      "f1": 0.947,
+      "support": 30
+    },
+    {
+      "class": "Unmodified Flake",
+      "precision": 0.942,
+      "recall": 0.98,
+      "f1": 0.961,
+      "support": 50
     }
   ],
   "confusion_matrix": [
     [
+      882,
+      1,
+      2,
+      21,
+      10,
+      0,
+      2,
+      0,
+      0,
+      0
+    ],
+    [
+      1,
+      377,
+      7,
+      3,
+      0,
+      11,
+      0,
+      0,
+      0,
+      2
+    ],
+    [
+      0,
+      13,
+      579,
       0,
       0,
       0,
@@ -66,13 +110,40 @@
       0
     ],
     [
+      24,
+      3,
+      0,
+      716,
+      1,
+      6,
+      1,
       0,
       0,
+      0
+    ],
+    [
+      10,
+      0,
+      0,
+      1,
+      243,
       0,
       0,
       0,
       0,
       0
+    ],
+    [
+      5,
+      7,
+      1,
+      14,
+      0,
+      234,
+      0,
+      0,
+      0,
+      1
     ],
     [
       0,
@@ -81,13 +152,7 @@
       0,
       0,
       0,
-      0
-    ],
-    [
-      0,
-      0,
-      0,
-      0,
+      50,
       0,
       0,
       0
@@ -96,17 +161,11 @@
       0,
       0,
       0,
+      2,
       0,
+      1,
       0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0,
-      0,
-      0,
+      1,
       0,
       0
     ],
@@ -115,19 +174,42 @@
       0,
       0,
       0,
+      3,
       0,
       0,
+      0,
+      27,
       0
+    ],
+    [
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      49
     ]
   ],
   "classes": [
-    "Backed knife",
-    "Burin",
-    "Denticulate",
-    "Handaxe",
-    "Notched",
-    "Point",
-    "Scraper"
+    "Biface",
+    "Blade",
+    "Bladelet",
+    "Core",
+    "Experimental Core",
+    "Flake",
+    "Retouched Flake",
+    "Tool",
+    "Unmodified Cobble",
+    "Unmodified Flake"
   ],
-  "classification_report": "              precision    recall  f1-score   support\n\nBacked knife       0.00      0.00      0.00     100.0\n       Burin       0.00      0.00      0.00     100.0\n Denticulate       0.00      0.00      0.00     100.0\n     Handaxe       0.00      0.00      0.00     100.0\n     Notched       0.00      0.00      0.00     100.0\n       Point       0.00      0.00      0.00     100.0\n     Scraper       0.00      0.00      0.00     100.0\n\n   micro avg       0.00      0.00      0.00     700.0\n   macro avg       0.00      0.00      0.00     700.0\nweighted avg       0.00      0.00      0.00     700.0\n"
+  "n_samples": 3312,
+  "n_classes": 10,
+  "classification_report": "                   precision    recall  f1-score   support\n\n           Biface       0.96      0.96      0.96       918\n            Blade       0.94      0.94      0.94       401\n         Bladelet       0.98      0.98      0.98       592\n             Core       0.94      0.95      0.95       751\nExperimental Core       0.95      0.96      0.95       254\n            Flake       0.93      0.89      0.91       262\n  Retouched Flake       0.94      1.00      0.97        50\n             Tool       1.00      0.25      0.40         4\nUnmodified Cobble       1.00      0.90      0.95        30\n Unmodified Flake       0.94      0.98      0.96        50\n\n         accuracy                           0.95      3312\n        macro avg       0.96      0.88      0.90      3312\n     weighted avg       0.95      0.95      0.95      3312\n",
+  "name": "bordes",
+  "display_name": "Bordes Typology",
+  "n_features": 22
 }
