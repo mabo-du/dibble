@@ -8,6 +8,8 @@ build/
 .superpowers/
 .beads/
 .gitnexus
+.pytest_cache/
+.DS_Store
 
 # Generated training data — CSVs, raw meshes, ZIP archives from Zenodo downloads
 # (symlink to /data/dibble-training/raw — recreate if missing)
@@ -15,3 +17,11 @@ lithicore/data/training/raw
 
 # Benchmark output artifacts (reproducible via `lithicore benchmark`)
 docs/benchmark/results/*.html
+
+# IDE / editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.iml
