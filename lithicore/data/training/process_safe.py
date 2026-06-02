@@ -56,7 +56,7 @@ FEATURE_NAMES = [
     "surface_area_mm2", "elongation", "flatness", "compactness",
     "circularity", "rectangularity", "diameter_mm", "curvature",
     "edge_length_mean", "edge_length_std", "edge_length_skewness",
-    "edge_length_kurtosis", "edge_angle_mean", "edge_angle_std",
+    "edge_length_kurtosis", "edge_angle_mean_deg", "edge_angle_std_deg",
     "edge_angle_skewness", "edge_angle_kurtosis",
     "convexity", "solidity",
 ]
