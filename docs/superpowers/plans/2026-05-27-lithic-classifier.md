@@ -1587,3 +1587,40 @@ Changes:
 ```bash
 cd .../dibble && git add lithicope/src/lithicope/_main_window.py && git commit -m "feat: wire classification panel and overlays into main window"
 ```
+
+---
+
+## Future Enhancement: Topology-Based Scar Detection via Graph Modelling
+
+**Reference:** Linsel et al. (2025) — "From Scar to Scar: Reconstructing Operational Sequences of Lithic Artifacts using Scar-Ridge-Pattern-based Graph Models"
+**Zenodo:** [10.5281/zenodo.14882743](https://zenodo.org/records/14882743) (methodology paper)
+**Status:** Not yet implemented — requires algorithm development
+
+### Summary
+
+The current scar detection (`_scar_detection.py`) uses Shape Index curvature analysis + watershed segmentation to identify individual flake scars on a mesh surface. The Linsel et al. approach is fundamentally different: it uses **topology-based scar detection** where scar boundaries are identified via **ridge-pattern graphs** — the raised ridges between adjacent flake scars form a network that can be extracted and modelled as a directed graph showing the temporal sequence of flake removals.
+
+This adds two capabilities not currently available:
+
+1. **Scar adjacency topology** — How scars relate to each other spatially (overlapping, truncated, sequential). This could be encoded as new features for the classifier (e.g., "scar adjacency count", "overlap ratio", "truncation frequency").
+
+2. **Operational sequence reconstruction** — The order flakes were removed from a core. This directly maps to the **Technological typology** (Initialization → Maintenance → Optimal → Other reduction stages), potentially providing a more principled basis for reduction stage classification than the current 22-dim feature vector.
+
+### Implementation tasks
+
+- [ ] **t011** Research: Read Linsel et al. paper and identify extractable algorithms ~2h risk:low
+- [ ] **t011.1** Implement ridge-pattern extraction: find raised ridges between scar boundaries using dihedral angle thresholding on the existing scar segmentation output ~4h risk:med
+- [ ] **t011.2** Build adjacency graph: connect adjacent scar pairs and assign edge weights based on truncation/overlap geometry ~3h risk:med
+- [ ] **t011.3** Extract topological features: compute graph metrics (node degree, clustering coefficient, path length) and add to LithicFeatureVector as new feature dimensions ~2h risk:low
+- [ ] **t011.4** Evaluate: retrain all classifiers with new features and compare CV accuracy delta ~1h risk:low
+
+### Expected impact
+
+- **Technological typology**: Higher impact — scar topology directly encodes reduction sequence stage
+- **Basic/Bordes**: Lower impact — morphological shape is more discriminative than scar topology for broad typology classes
+- **Feature vector expansion**: Current 22-dim → ~26-28 dim with 4-6 new topological features
+
+### Dependencies
+
+- Requires existing `_scar_detection.py` watershed output (already implemented)
+- DOI for reference implementation: `10.5281/zenodo.10477448` (linked scar topology dataset)

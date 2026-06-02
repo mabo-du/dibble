@@ -61,6 +61,8 @@ Format: `- [ ] tNNN Description @owner #tag ~estimate risk:level logged:date`
 ## Backlog
 
 <!--TOON:backlog[0]{id,desc,owner,tags,est,risk,logged,status}:
+t011,Implement topology-based scar detection from Linsel et al. graph modelling,,scar-detection graph,12h,med,2026-06-03,backlog
+t012,Merge "Tool" class (4 samples) into "Retouched Flake",,classification,1h,low,2026-06-03,backlog
 -->
 
 ## In Progress
