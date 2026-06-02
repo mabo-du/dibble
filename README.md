@@ -153,7 +153,8 @@ lithicore/                          # Core library (pure Python, no GUI)
 │   │   ├── download_coads.py       # COADS batch downloader (Zenodo API)
 │   │   ├── validate_pipeline.py    # Photo-to-mesh pipeline validator
 │   │   └── processed/              # Generated training_matrix.csv
-│   └── generate_training_data.py   # Legacy synthetic data generator
+│   ├── generate_training_data.py   # Legacy synthetic data generator
+│   └── run_benchmark.py            # CLI benchmark entry point
 
 lithicope/                          # Desktop GUI (PyQt6 + PyVista)
 └── src/lithicope/
@@ -163,6 +164,7 @@ lithicope/                          # Desktop GUI (PyQt6 + PyVista)
     ├── _import_dialog.py           # Import configuration
     ├── _results_panel.py           # Measurement display
     ├── _batch_runner.py            # Threaded batch processing
+    ├── _batch_photogrammetry.py    # Batch photogrammetry queue
     ├── _photogrammetry_dialog.py   # 3-mode photogrammetry UI
     ├── _annotation_panel.py        # Annotation management
     ├── _classification_panel.py    # Classification + active learning

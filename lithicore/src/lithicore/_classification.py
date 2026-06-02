@@ -283,9 +283,16 @@ class ClassifierModel:
     def _load(self, path: Path) -> None:
         """Load a trained model from a .joblib file."""
         data = joblib.load(str(path))
-        self._model = data["model"]
-        self._classes = data["classes"]
-        self.typology_name = data.get("typology_name", self.typology_name)
+        if isinstance(data, dict):
+            # Current format: dict with "model", "classes", "typology_name"
+            self._model = data["model"]
+            self._classes = data["classes"]
+            self.typology_name = data.get("typology_name", self.typology_name)
+        else:
+            # Legacy format: saved as a ClassifierModel object directly
+            self._model = data._model
+            self._classes = data._classes
+            self.typology_name = data.typology_name
 
     def save(self, path: Path) -> None:
         """Save the trained model to a .joblib file."""
@@ -568,10 +575,10 @@ def train_model(
     classes = sorted(set(labels))
 
     # Increase tree depth for larger typologies (more classes need deeper trees)
-    depth = min(16, max(12, len(classes) * 2))
+    depth = min(20, max(12, len(classes) * 2))
     base_rf = RandomForestClassifier(
         n_estimators=500, max_depth=depth,
-        min_samples_leaf=3, class_weight="balanced", random_state=42,
+        min_samples_leaf=2, class_weight="balanced", random_state=42,
     )
     model = ClassifierModel(typology_name=typology_name)
     model._classes = classes

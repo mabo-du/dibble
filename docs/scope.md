@@ -1,4 +1,7 @@
 # PROJECT 7 — Lithic 3D Morphological Analyzer
+
+> **Historical planning document.** This was the original v1 MVP scope written before any code existed. The current app (v4.x) far exceeds these goals — see [README](../README.md) for up-to-date feature documentation.
+
 ## Overview
 
 A desktop application that allows archaeologists and anthropologists to load a 3D scan of a stone tool (lithic artefact) and automatically extract standardised morphological measurements — edge angles, platform dimensions, flake scar counts and orientations, maximum length/width/thickness, mass estimation — without writing any code. Currently this work requires R (Lithics3D package) or Python (PyLithics), which excludes most lithic analysts. This tool provides a GUI wrapper around these algorithms.
