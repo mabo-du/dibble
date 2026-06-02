@@ -575,9 +575,10 @@ def train_model(
     classes = sorted(set(labels))
 
     # Increase tree depth for larger typologies (more classes need deeper trees)
+    # n_estimators=200 keeps each model ~40-48 MB, under GitHub's 100 MB file limit
     depth = min(20, max(12, len(classes) * 2))
     base_rf = RandomForestClassifier(
-        n_estimators=500, max_depth=depth,
+        n_estimators=200, max_depth=depth,
         min_samples_leaf=2, class_weight="balanced", random_state=42,
     )
     model = ClassifierModel(typology_name=typology_name)

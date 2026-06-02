@@ -193,24 +193,25 @@ lithicope/                          # Desktop GUI (PyQt6 + PyVista)
 
 ## Classifier Validation
 
-The classifiers are trained on **3,028 real-world 3D scan meshes** from three continents:
+The classifiers are trained on **3,312 real-world 3D scan meshes** from three continents:
 
 | Data Source | Origin | Artefacts | Scanner |
 |---|---|---|---|
-| Open Aurignacian Project (Vols 1-4) | Italy | 2,010 | Artec Space Spider / Micro / micro-CT |
+| Open Aurignacian Project (Vols 1-4) + Broglio, Castelcivita, Cala | Italy | 2,418 | Artec Space Spider / Micro / micro-CT |
 | Levantine Acheulean Handaxes | Israel / Palestine | 526 | Structured light |
 | COADS (Central Ohio Arch. Digitization Survey) | Ohio, USA | 392 | Structured light |
+| Lombao Experimental Cores | Spain | 254 | Structured light |
 | Morales Experimental Retouch | Spain | 100 | Structured light |
 
 | Typology | Classes | 5-Fold CV Accuracy | Training Accuracy |
 |---|---|---|---|
-| Basic Morphological | Biface, Blade, Bladelet, Core, Flake, Retouched Flake, Tool, Unmodified Flake | **80.7%** | 95.3% |
-| Bordes Typology | Same morphology-based mapping | **80.7%** | 95.3% |
-| Technological | Handaxe, Initialization, Maintenance, Optimal, Other, Semi-cortical, Undetermined | **65.3%** | 87.4% |
+| Basic Morphological | Biface, Blade, Bladelet, Core, Experimental Core, Flake, Retouched Flake, Tool, Unmodified Cobble, Unmodified Flake | **79.2%** | 95.4% |
+| Bordes Typology | Same morphology-based mapping | **79.2%** | 95.4% |
+| Technological | Handaxe, Initialization, Maintenance, Optimal, Other, Semi-cortical, Undetermined, Unknown | **65.4%** | 90.6% |
 
 *Results are 5-fold cross-validation on real archaeological and experimental meshes.
-Run `lithicore benchmark` to reproduce the full validation report on your machine,
-including confusion matrices and per-class precision/recall/F1 scores.*
+Run `lithicore data/training/retrain.py` to retrain all classifiers, then run
+`lithicore benchmark` to view confusion matrices and per-class scores.*
 
 ---
 

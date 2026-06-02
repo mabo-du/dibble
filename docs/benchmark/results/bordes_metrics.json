@@ -3,83 +3,65 @@
   "display_name": "Bordes Typology",
   "n_classes": 7,
   "n_test_samples": 700,
-  "accuracy": 0.8514,
+  "accuracy": 0.0,
   "per_class": [
     {
       "class": "Backed knife",
-      "precision": 0.86,
-      "recall": 0.92,
-      "f1": 0.889,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
       "support": 100
     },
     {
       "class": "Burin",
-      "precision": 0.872,
-      "recall": 0.82,
-      "f1": 0.845,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
       "support": 100
     },
     {
       "class": "Denticulate",
-      "precision": 0.827,
-      "recall": 0.81,
-      "f1": 0.818,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
       "support": 100
     },
     {
       "class": "Handaxe",
-      "precision": 1.0,
-      "recall": 0.98,
-      "f1": 0.99,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
       "support": 100
     },
     {
       "class": "Notched",
-      "precision": 0.725,
-      "recall": 0.74,
-      "f1": 0.733,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
       "support": 100
     },
     {
       "class": "Point",
-      "precision": 0.854,
-      "recall": 0.82,
-      "f1": 0.837,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
       "support": 100
     },
     {
       "class": "Scraper",
-      "precision": 0.829,
-      "recall": 0.87,
-      "f1": 0.849,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
       "support": 100
     }
   ],
   "confusion_matrix": [
     [
-      92,
-      0,
-      2,
-      0,
-      4,
-      1,
-      1
-    ],
-    [
-      0,
-      82,
       0,
       0,
-      2,
-      7,
-      9
-    ],
-    [
-      2,
       0,
-      81,
       0,
-      17,
+      0,
       0,
       0
     ],
@@ -87,37 +69,55 @@
       0,
       0,
       0,
-      98,
-      1,
       0,
-      1
+      0,
+      0,
+      0
     ],
     [
-      6,
       0,
-      14,
       0,
-      74,
-      2,
-      4
+      0,
+      0,
+      0,
+      0,
+      0
     ],
     [
-      5,
-      8,
       0,
       0,
-      2,
-      82,
-      3
+      0,
+      0,
+      0,
+      0,
+      0
     ],
     [
-      2,
-      4,
-      1,
       0,
-      2,
-      4,
-      87
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
     ]
   ],
   "classes": [
@@ -129,5 +129,5 @@
     "Point",
     "Scraper"
   ],
-  "classification_report": "              precision    recall  f1-score   support\n\nBacked knife       0.86      0.92      0.89       100\n       Burin       0.87      0.82      0.85       100\n Denticulate       0.83      0.81      0.82       100\n     Handaxe       1.00      0.98      0.99       100\n     Notched       0.73      0.74      0.73       100\n       Point       0.85      0.82      0.84       100\n     Scraper       0.83      0.87      0.85       100\n\n    accuracy                           0.85       700\n   macro avg       0.85      0.85      0.85       700\nweighted avg       0.85      0.85      0.85       700\n"
+  "classification_report": "              precision    recall  f1-score   support\n\nBacked knife       0.00      0.00      0.00     100.0\n       Burin       0.00      0.00      0.00     100.0\n Denticulate       0.00      0.00      0.00     100.0\n     Handaxe       0.00      0.00      0.00     100.0\n     Notched       0.00      0.00      0.00     100.0\n       Point       0.00      0.00      0.00     100.0\n     Scraper       0.00      0.00      0.00     100.0\n\n   micro avg       0.00      0.00      0.00     700.0\n   macro avg       0.00      0.00      0.00     700.0\nweighted avg       0.00      0.00      0.00     700.0\n"
 }
