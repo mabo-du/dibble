@@ -205,9 +205,9 @@ The classifiers are trained on **3,415 real-world 3D scan meshes** from three co
 
 | Typology | Classes | 5-Fold CV Accuracy | Training Accuracy |
 |---|---|---|---|---|
-| Basic Morphological | Biface, Blade, Bladelet, Core, Experimental Core, Flake, Retouched Flake, Unmodified Cobble, Unmodified Flake | **81.6%** | 96.3% |
-| Bordes Typology | Same morphology-based mapping | **81.6%** | 96.3% |
-| Technological | Handaxe, Initialization, Maintenance, Optimal, Other, Semi-cortical, Undetermined, Unknown | **70.4%** | 92.5% |
+| Basic Morphological | Biface, Blade, Bladelet, Core, Experimental Core, Flake, Retouched Flake, Unmodified Cobble, Unmodified Flake | **84.8%** | 96.8% |
+| Bordes Typology | Same morphology-based mapping | **84.8%** | 96.8% |
+| Technological | Handaxe, Initialization, Maintenance, Optimal, Other, Semi-cortical, Undetermined, Unknown | **73.6%** | 92.3% |
 
 *Results are 5-fold cross-validation on real archaeological and experimental meshes.
 Run `lithicore benchmark` to generate a full interactive HTML report with confusion
@@ -215,18 +215,50 @@ matrices, per-class precision/recall/F1 scores, and cross-validation accuracy.*
 
 ---
 
-## Citation
+## Known Limitations
 
-If you use Dibble in published research, please cite the software:
+Dibble is an **open-source research tool**, not a production-grade commercial product.
+Before using the classifier in published research, please be aware of these limitations:
 
-```
-Bouck, M. (2026). Dibble: Digital Image-Based Benchmark for Lithic Evaluation
-(Version 4.0) [Computer software]. https://github.com/mabo-du/dibble
-```
+### Class imbalance
+The classifier performs well on well-represented classes (Biface: 1,018 samples,
+Core: 751, Bladelet: 592) but is **unreliable on rare classes**:
+
+| Class | Samples | Reliability |
+|-------|---------|-------------|
+| Biface, Core, Bladelet | 592–1,018 | Good |
+| Blade, Flake, Experimental Core | 254–401 | Moderate |
+| Retouched Flake | 57 | **Low — use predictions with caution** |
+| Unmodified Flake, Unmodified Cobble | 30–50 | **Low — may misclassify** |
+
+### Geographic bias
+~70% of training data comes from Italian Aurignacian sites (Fumane, Castelcivita,
+Cala, Bombrini). The classifier will be **less accurate on non-European assemblages**
+or time periods not represented in training.
+
+### Feature limitation
+One of the 22 morphometric features (`edge_angle_std_deg`) was computed as zero
+for the entire training corpus due to an earlier pipeline bug (CSV column name
+mismatch). This has been fixed and the existing matrix patched — **88.8% of rows
+now have correct non-zero values**. The 11.2% still at zero correspond to meshes
+not available on disk (some Levantine, Lombao, and COADS specimens).
+
+### Cross-validation vs real-world accuracy
+The reported 81.6% CV accuracy is a **best-case estimate** from 5-fold cross-validation
+on the training set. Real-world accuracy on independently collected assemblages will
+likely be lower.
+
+### Recommendations for users
+- Retrain the classifier on your own assemblage before relying on predictions
+  (see custom typology training in the GUI)
+- Treat predictions on Retouched Flake, Unmodified Flake, and Unmodified Cobble
+  as **suggestions that require expert verification**
+- Use the explainable predictions panel to review which features drove each decision
+- Run `lithicore benchmark` on your retrained model to assess its actual performance
 
 ---
 
-## License
+## Citation
 
 MIT License. See `LICENSE` for details.
 
