@@ -41,15 +41,21 @@ Dibble is an **open-source research tool** (v0.4.0-beta), not a production-grade
 commercial product. Before using the classifier in published research, please
 understand these limitations.
 
-### Class imbalance
-The classifier is reliable on well-represented classes but **unreliable on rare ones**:
+### Class imbalance (3,415 total samples)
+The classifier performs well on classes with hundreds of samples but is
+**unreliable on rare ones**:
 
 | Class | Samples | Reliability |
 |-------|---------|-------------|
-| Biface, Core, Bladelet | 592–1,018 | Good |
-| Blade, Flake, Experimental Core | 254–401 | Moderate |
+| Biface | 1,018 | Good |
+| Core | 751 | Good |
+| Bladelet | 592 | Good |
+| Blade | 401 | Moderate |
+| Flake | 262 | Moderate |
+| Experimental Core | 254 | Moderate |
 | Retouched Flake | 57 | **Low — predictions need expert verification** |
-| Unmodified Flake, Unmodified Cobble | 30–50 | **Low — may misclassify** |
+| Unmodified Flake | 50 | **Low — may misclassify** |
+| Unmodified Cobble | 30 | **Low — may misclassify** |
 
 ### Geographic bias
 ~70% of training data comes from Italian Aurignacian sites (Fumane, Castelcivita,
