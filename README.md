@@ -12,7 +12,13 @@
   <img src="https://img.shields.io/badge/GPU-none%20required-brightgreen" alt="No GPU required">
   <img src="https://img.shields.io/badge/CLI-%E2%9C%94-blueviolet" alt="CLI">
   <img src="https://img.shields.io/badge/GUI-%E2%9C%94-orange" alt="GUI">
+  <img src="https://img.shields.io/badge/status-beta-yellow" alt="Status: Beta">
 </p>
+
+> **Status: Beta** — Dibble is an open-source research tool in active development.
+> The classifier achieves ~85% cross-validation accuracy on European Upper Paleolithic
+> assemblages but performs poorly on under-represented classes and non-European
+> assemblages. See [Known Limitations](#known-limitations) before using in published research.
 
 ---
 
@@ -26,6 +32,44 @@ in natural language. Everything runs locally. No GPU required. No cloud dependen
 
 Dibble is named for **[Harold Dibble](https://en.wikipedia.org/wiki/Harold_Dibble)**
 (1951–2018), pioneering lithic technologist and open-source advocate.
+
+---
+
+## Known Limitations
+
+Dibble is an **open-source research tool** (v0.4.0-beta), not a production-grade
+commercial product. Before using the classifier in published research, please
+understand these limitations.
+
+### Class imbalance
+The classifier is reliable on well-represented classes but **unreliable on rare ones**:
+
+| Class | Samples | Reliability |
+|-------|---------|-------------|
+| Biface, Core, Bladelet | 592–1,018 | Good |
+| Blade, Flake, Experimental Core | 254–401 | Moderate |
+| Retouched Flake | 57 | **Low — predictions need expert verification** |
+| Unmodified Flake, Unmodified Cobble | 30–50 | **Low — may misclassify** |
+
+### Geographic bias
+~70% of training data comes from Italian Aurignacian sites (Fumane, Castelcivita,
+Cala, Bombrini). The classifier will be **less accurate on non-European assemblages**
+and time periods not represented in the training corpus.
+
+### Feature limitation
+One of the 22 morphometric features (`edge_angle_std_deg`) was computed as zero
+for the full training corpus due to an earlier pipeline bug. It has been patched
+for 89% of rows, but 11% remain zero (meshes not available on disk for reprocessing).
+
+### Cross-validation vs reality
+The reported CV accuracy is a **best-case estimate** from 5-fold cross-validation.
+Real-world accuracy on independently collected assemblages will likely be lower.
+
+### Recommendations
+- Retrain the classifier on your own assemblage before relying on predictions
+- Treat predictions on rare classes as **suggestions requiring expert verification**
+- Run `lithicore benchmark` on your retrained model to assess actual performance
+- Use the explainable predictions panel to review which features drove each decision
 
 ---
 
@@ -215,50 +259,18 @@ matrices, per-class precision/recall/F1 scores, and cross-validation accuracy.*
 
 ---
 
-## Known Limitations
+## Citation
 
-Dibble is an **open-source research tool**, not a production-grade commercial product.
-Before using the classifier in published research, please be aware of these limitations:
+If you use Dibble in published research, please cite the software:
 
-### Class imbalance
-The classifier performs well on well-represented classes (Biface: 1,018 samples,
-Core: 751, Bladelet: 592) but is **unreliable on rare classes**:
-
-| Class | Samples | Reliability |
-|-------|---------|-------------|
-| Biface, Core, Bladelet | 592–1,018 | Good |
-| Blade, Flake, Experimental Core | 254–401 | Moderate |
-| Retouched Flake | 57 | **Low — use predictions with caution** |
-| Unmodified Flake, Unmodified Cobble | 30–50 | **Low — may misclassify** |
-
-### Geographic bias
-~70% of training data comes from Italian Aurignacian sites (Fumane, Castelcivita,
-Cala, Bombrini). The classifier will be **less accurate on non-European assemblages**
-or time periods not represented in training.
-
-### Feature limitation
-One of the 22 morphometric features (`edge_angle_std_deg`) was computed as zero
-for the entire training corpus due to an earlier pipeline bug (CSV column name
-mismatch). This has been fixed and the existing matrix patched — **88.8% of rows
-now have correct non-zero values**. The 11.2% still at zero correspond to meshes
-not available on disk (some Levantine, Lombao, and COADS specimens).
-
-### Cross-validation vs real-world accuracy
-The reported 81.6% CV accuracy is a **best-case estimate** from 5-fold cross-validation
-on the training set. Real-world accuracy on independently collected assemblages will
-likely be lower.
-
-### Recommendations for users
-- Retrain the classifier on your own assemblage before relying on predictions
-  (see custom typology training in the GUI)
-- Treat predictions on Retouched Flake, Unmodified Flake, and Unmodified Cobble
-  as **suggestions that require expert verification**
-- Use the explainable predictions panel to review which features drove each decision
-- Run `lithicore benchmark` on your retrained model to assess its actual performance
+```
+Bouck, M. (2026). Dibble: Digital Image-Based Benchmark for Lithic Evaluation
+(Version 0.4.0-beta) [Computer software]. https://github.com/mabo-du/dibble
+```
 
 ---
 
-## Citation
+## License
 
 MIT License. See `LICENSE` for details.
 
