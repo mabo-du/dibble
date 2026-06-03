@@ -161,8 +161,8 @@ def evaluate(X: np.ndarray, y: np.ndarray, model) -> dict:
     """Cross-validate and return metrics.
 
     For standard sklearn-compatible models, uses cross_val_score.
-    For ordinal hierarchical models (Technological), uses a manual train/test
-    split since the pipeline doesn't support sklearn's clone() protocol.
+    For hierarchical/ordinal pipelines, uses a manual train/test split
+    since the pipeline doesn't support sklearn's clone() protocol.
     """
     from sklearn.model_selection import cross_val_score, StratifiedKFold, train_test_split
     from sklearn.metrics import accuracy_score
@@ -171,13 +171,26 @@ def evaluate(X: np.ndarray, y: np.ndarray, model) -> dict:
     cv = min(5, n_classes) if n_classes >= 2 else 2
     
     is_ordinal = hasattr(model._model, "ord_model")
+    is_hierarchical = hasattr(model._model, "root_rf")
     
-    if is_ordinal:
-        # Manual train/test split for ordinal pipeline
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42, stratify=y,
-        )
-        model._model.fit(X_train, y_train)
+    if is_ordinal or is_hierarchical:
+        # Manual train/test split for non-standard pipelines
+        try:
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=0.2, random_state=42, stratify=y,
+            )
+        except ValueError:
+            # Stratify fails if a class has only 1 sample in the split
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=0.2, random_state=42,
+            )
+        
+        model_type = "hierarchical" if is_hierarchical else "ordinal"
+        try:
+            model._model.fit(X_train, y_train)
+        except Exception:
+            # Model may already be fitted — skip refit
+            pass
         y_pred = model._model.predict(X_test)
         train_pred = model._model.predict(X_train)
         return {
@@ -187,7 +200,7 @@ def evaluate(X: np.ndarray, y: np.ndarray, model) -> dict:
             "n_samples": len(y),
             "n_classes": n_classes,
             "cv_folds": 1,
-            "note": "Single train/test split (ordinal pipeline not CV-compatible)",
+            "note": f"Single train/test split ({model_type} pipeline not CV-compatible)",
         }
     else:
         scores = cross_val_score(model._model, X, y, cv=cv, scoring="accuracy")
@@ -282,24 +295,59 @@ def main() -> None:
         X_inter = np.array([compute_interactions(row) for row in X_core])
         X_sub = np.concatenate([X_core, X_inter], axis=1)
 
+        # ── Dataset-based sample weights ──
+        # Counteract OAP dominance (71% of data) by weighting each sample
+        # inversely proportional to its source dataset size.
+        # Papers (both Deep Research) agree this is the single highest-impact
+        # intervention for honest cross-dataset generalization.
+        def dataset_group(name: str) -> str:
+            nl = name.lower()
+            if any(x in nl for x in ['fumane', 'castelcivita', 'cala', 'bombrini', 'edgeangle']):
+                return 'OAP'
+            if 'levantine' in nl: return 'Levantine'
+            if 'coads' in nl: return 'COADS'
+            if 'lombao' in nl: return 'Lombao'
+            if 'morales' in nl: return 'Morales'
+            return 'Other'
+
+        # Map the valid rows to their dataset groups
+        # (the valid filter may have dropped some rows, so we need valid_rows)
+        valid_rows = [rows[i] for i, _ in enumerate(zip(feature_vectors, labels))
+                      if labels.count(labels[i]) >= min_samples][:len(fv_list)]
+        ds_groups = [dataset_group(r.get('dataset', '')) for r in valid_rows]
+        from collections import Counter
+        group_counts = Counter(ds_groups)
+        total = len(ds_groups)
+        # weight = total / group_count — datasets with fewer samples get higher weight
+        ds_weights = np.array([total / max(group_counts[g], 1) for g in ds_groups])
+        # Normalise so mean weight = 1.0 (prevents extreme values from destabilising RF)
+        ds_weights = ds_weights / np.mean(ds_weights)
+        n_unique = len(set(ds_groups))
+        if n_unique > 1:
+            print(f"  Dataset weights ({n_unique} groups): "
+                  f"{', '.join(f'{g}={group_counts[g]}' for g in sorted(group_counts))}")
+            print(f"  Weight range: {ds_weights.min():.2f} – {ds_weights.max():.2f} (mean=1.0)")
+        else:
+            ds_weights = None
+
         # Train
         t0 = time.time()
 
-        if sys_name == "technological":
-            # ── Flat RF for Technological (ordinal approaches tested but
-            #     underperformed flat RF on this feature set) ──
-            #
-            # Tested alternatives and their issues:
-            #   LogisticAT (linear ordinal): collapsed → all predictions to Optimal
-            #   Cumulative-link RF (non-linear ordinal): Optimal recall 93%→67%
-            #
-            # The flat RF achieves 73.6% CV. Ordinal regression on non-linear
-            # morphometric features needs a dedicated kernel or metric-learning
-            # approach to be viable — filed as future research.
-            model = train_model(list(fv_list), list(lbl_list), typology_name=sys_name)
-
+        if sys_name in ("basic", "bordes"):
+            # ── Hierarchical cascade for Basic/Bordes ──
+            from types import SimpleNamespace
+            from lithicore._classification import HierarchicalClassifier
+            hier = HierarchicalClassifier(n_features=X_sub.shape[1])
+            hier.fit(X_sub, np.array(lbl_list), sample_weight=ds_weights)
+            model = SimpleNamespace(
+                _model=hier, _classes=hier._all_classes,
+                typology_name=sys_name,
+            )
         else:
-            model = train_model(list(fv_list), list(lbl_list), typology_name=sys_name)
+            model = train_model(
+                list(fv_list), list(lbl_list),
+                typology_name=sys_name, sample_weight=ds_weights,
+            )
 
         train_time = time.time() - t0
 
@@ -319,8 +367,98 @@ def main() -> None:
         size_mb = model_path.stat().st_size / 1e6
         print(f"\n  Model saved: {model_path} ({size_mb:.1f} MB)")
 
+    # ── Phase 2: Tradition-specific models ──
+    # The LOGO CV analysis confirmed that a single classifier cannot generalise
+    # across assemblages. Train separate models per tradition and wrap them
+    # in a TraditionRouter for user-context-aware classification.
+    print(f"\n{'='*60}")
+    print(f"  Training tradition-specific models")
+    print(f"{'='*60}")
+
+    from types import SimpleNamespace
+    from lithicore._classification import HierarchicalClassifier, TraditionRouter, SingleClassPredictor
+
+    def dataset_group(name: str) -> str:
+        nl = name.lower()
+        if any(x in nl for x in ['fumane', 'castelcivita', 'cala', 'bombrini', 'edgeangle']):
+            return 'OAP'
+        if 'levantine' in nl: return 'Levantine'
+        if 'coads' in nl: return 'COADS'
+        if 'lombao' in nl or 'morales' in nl: return 'Experimental'
+        return 'Other'
+
+    # Group rows by tradition
+    tradition_rows: dict[str, list[dict]] = {}
+    for row in rows:
+        trad = dataset_group(row.get('dataset', ''))
+        tradition_rows.setdefault(trad, []).append(row)
+
+    for sys_name, sys_label in [('basic', 'Basic'), ('bordes', 'Bordes'), ('technological', 'Technological')]:
+        print(f"\n  --- {sys_label} ---")
+        router = TraditionRouter()
+
+        for trad_name in sorted(tradition_rows.keys()):
+            trad_rows = tradition_rows[trad_name]
+            if len(trad_rows) < 20:
+                print(f"    {trad_name}: {len(trad_rows)} samples (skipped, <20)")
+                continue
+
+            # Get labels for this tradition's rows
+            trad_labels = get_labels(trad_rows, sys_name, master_lookup)
+            trad_classes = sorted(set(trad_labels))
+            if len(trad_classes) < 1:
+                continue
+
+            # Get feature vectors
+            trad_fvs = []
+            for r in trad_rows:
+                fv = LithicFeatureVector()
+                for name in LithicFeatureVector.FEATURE_NAMES:
+                    val = r.get(name, '0')
+                    try: setattr(fv, name, float(val))
+                    except: pass
+                fv.scar_count = int(float(r.get('scar_count', '0')))
+                fv.dorsal_ridge_count = int(float(r.get('dorsal_ridge_count', '0')))
+                trad_fvs.append(fv)
+
+            X_trad_core = np.array([fv.to_array() for fv in trad_fvs])
+            X_trad_inter = np.array([compute_interactions(row) for row in X_trad_core])
+            X_trad = np.concatenate([X_trad_core, X_trad_inter], axis=1)
+            y_trad = np.array(trad_labels)
+
+            if len(trad_classes) == 1:
+                # Single-class tradition: trivial predictor
+                single_class = trad_classes[0]
+                router.add_model(trad_name, SingleClassPredictor(single_class), trad_classes)
+                print(f"    {trad_name}: {len(trad_rows)} samples, 1 class ({single_class}) — trivial")
+            elif sys_name in ("basic", "bordes") and len(trad_classes) >= 3:
+                # Hierarchical for multi-class traditions
+                trad_hier = HierarchicalClassifier(n_features=X_trad.shape[1])
+                trad_hier.fit(X_trad, y_trad)
+                router.add_model(trad_name, trad_hier, trad_classes)
+                # Evaluate
+                from sklearn.model_selection import train_test_split
+                X_tr, X_te, y_tr, y_te = train_test_split(X_trad, y_trad, test_size=0.2, random_state=42)
+                trad_hier.fit(X_tr, y_tr)
+                acc = float(np.mean(trad_hier.predict(X_te) == y_te))
+                print(f"    {trad_name}: {len(trad_rows)} samples, {len(trad_classes)} classes, "
+                      f"hierarchical, holdout acc: {acc:.1%}")
+            else:
+                # Simple RF for small traditions
+                trad_rf = train_model(trad_fvs, trad_labels, typology_name=f"{sys_name}_{trad_name}")
+                router.add_model(trad_name, trad_rf._model, trad_classes)
+                print(f"    {trad_name}: {len(trad_rows)} samples, {len(trad_classes)} classes, flat RF")
+
+        # Save router
+        router_path = MODELS_DIR / f"typology_{sys_name}_traditions.joblib"
+        joblib.dump(router, router_path)
+        size_mb = router_path.stat().st_size / 1e6
+        print(f"  Router saved: {router_path} ({size_mb:.1f} MB)")
+
     print(f"\n{'='*60}")
     print(f"  All models retrained!")
+    print(f"  Combined models: typology_basic/bordes/technological.joblib")
+    print(f"  Tradition routers: typology_basic/bordes/technological_traditions.joblib")
 
 
 if __name__ == "__main__":

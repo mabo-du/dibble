@@ -257,6 +257,245 @@ def _compute_surface_roughness(mesh: trimesh.Trimesh) -> float:
         return 1.0
 
 
+class HierarchicalClassifier:
+    """Two-level hierarchical cascade for lithic typology.
+
+    Level 0: Broad morphological group (Flake/Blade, Core, Biface).
+    Level 1: Specific type within group (Blade, Flake, Core, Biface, etc.).
+
+    Each node has its own RandomForest trained on the relevant data subset.
+    This isolates decision boundaries — the root node separates gross morphology,
+    while leaf nodes focus on fine-grained distinctions within a group.
+
+    Hierarchy for Basic/Bordes:
+        Root
+        ├── flake_blade  →  Blade, Flake, Retouched Flake, Unmodified Flake
+        ├── core         →  Core, Experimental Core
+        └── biface       →  Biface, Unmodified Cobble
+    """
+
+    FLAT_NODES: ClassVar[dict[str, list[str]]] = {
+        "flake_blade": ["Blade", "Flake", "Retouched Flake", "Unmodified Flake"],
+        "core": ["Core", "Experimental Core"],
+        "biface": ["Biface", "Unmodified Cobble"],
+    }
+
+    # Reverse mapping: leaf class → parent node
+    LEAF_TO_NODE: ClassVar[dict[str, str]] = {
+        leaf: node
+        for node, leaves in FLAT_NODES.items()
+        for leaf in leaves
+    }
+
+    def __init__(self, n_features: int = 32) -> None:
+        self.n_features = n_features
+        self.root_rf: RandomForestClassifier | None = None
+        self.node_rfs: dict[str, RandomForestClassifier] = {}
+
+    def _train_node_rf(
+        self, X: np.ndarray, y: np.ndarray,
+        sample_weight: np.ndarray | None = None,
+    ) -> RandomForestClassifier:
+        """Train a single RandomForest for one node in the hierarchy."""
+        classes = sorted(set(y))
+        depth = min(20, max(12, len(classes) * 2))
+        rf = RandomForestClassifier(
+            n_estimators=200, max_depth=depth,
+            min_samples_leaf=2, max_features=0.3,
+            class_weight="balanced", random_state=42, n_jobs=1,
+        )
+        if sample_weight is not None:
+            rf.fit(X, y, sample_weight=sample_weight)
+        else:
+            rf.fit(X, y)
+        return rf
+
+    def fit(
+        self, X: np.ndarray, y: np.ndarray,
+        sample_weight: np.ndarray | None = None,
+    ) -> HierarchicalClassifier:
+        """Train all nodes in the hierarchy.
+
+        Args:
+            X: Feature matrix (n_samples, n_features).
+            y: Flat class labels (e.g., "Blade", "Core", "Biface").
+            sample_weight: Per-sample dataset weights.
+
+        Returns:
+            self (fitted pipeline).
+        """
+        # Map each sample to its Level-0 parent node
+        node_labels = np.array([
+            self.LEAF_TO_NODE.get(str(lbl), "other") for lbl in y
+        ])
+
+        # Train root classifier (broad group)
+        self.root_rf = self._train_node_rf(X, node_labels, sample_weight)
+
+        # Train one child classifier per node
+        for node_name, leaf_classes in self.FLAT_NODES.items():
+            mask = node_labels == node_name
+            if mask.sum() < 10:
+                continue
+            X_node = X[mask]
+            y_node = np.array([str(lbl) for lbl, m in zip(y, mask) if m])
+            sw_node = sample_weight[mask] if sample_weight is not None else None
+            self.node_rfs[node_name] = self._train_node_rf(X_node, y_node, sw_node)
+
+        # Ensure every leaf class can be predicted (fallback = root label)
+        self._all_classes = sorted(set(str(lbl) for lbl in y))
+        return self
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        """Predict class labels through the hierarchy."""
+        if X.ndim == 1:
+            X = X.reshape(1, -1)
+
+        # Level 0: predict broad group
+        node_preds = self.root_rf.predict(X)
+
+        # Level 1: route to child classifier
+        predictions: list[str] = []
+        for i, node in enumerate(node_preds):
+            node_str = str(node)
+            if node_str in self.node_rfs:
+                child_pred = self.node_rfs[node_str].predict(X[i:i + 1])[0]
+                predictions.append(str(child_pred))
+            else:
+                predictions.append(node_str)
+        return np.array(predictions)
+
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        """Return (n, n_all_classes) probability matrix.
+
+        Uses root confidence to weight child predictions.
+        Fallback: if child classifier misses a sample, uses root prediction.
+        """
+        if X.ndim == 1:
+            X = X.reshape(1, -1)
+
+        n = X.shape[0]
+        n_classes = len(self._all_classes)
+        cls_to_idx = {c: i for i, c in enumerate(self._all_classes)}
+        result = np.zeros((n, n_classes), dtype=float)
+
+        # Get root node probabilities
+        root_probs = self.root_rf.predict_proba(X)
+        root_classes = list(self.root_rf.classes_)
+
+        for i in range(n):
+            node_name = str(root_classes[int(np.argmax(root_probs[i]))])
+            if node_name in self.node_rfs:
+                child_probs = self.node_rfs[node_name].predict_proba(X[i:i + 1])[0]
+                child_classes = list(self.node_rfs[node_name].classes_)
+                for cls_name, prob in zip(child_classes, child_probs):
+                    if cls_name in cls_to_idx:
+                        result[i, cls_to_idx[cls_name]] = prob
+            else:
+                # No child classifier — distribute root probability to leaf classes
+                result[i, cls_to_idx.get(node_name, 0)] = 1.0
+
+        row_sums = result.sum(axis=1, keepdims=True)
+        row_sums = np.where(row_sums == 0, 1.0, row_sums)
+        return result / row_sums
+
+
+class SingleClassPredictor:
+    """Trivial predictor for traditions with only one class.
+
+    Always returns the same class label. Required for traditions like
+    COADS (all Biface) or Levantine (all Handaxe) where there's no
+    meaningful classification to do — the artefacts are all the same type.
+    """
+
+    def __init__(self, class_name: str) -> None:
+        self._classes = [class_name]
+        self.classes_ = np.array([class_name])
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        return np.full(X.shape[0], self._classes[0])
+
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        n = X.shape[0]
+        probs = np.zeros((n, 1))
+        probs[:, 0] = 1.0
+        return probs
+
+
+class TraditionRouter:
+    """Routes classification to a tradition-specific model.
+
+    Each archaeological tradition has its own class space and morphological
+    signatures. A single universal classifier cannot handle them all — the
+    LOGO CV analysis showed accuracy collapsing to 6-12% cross-dataset.
+
+    This router selects the appropriate sub-classifier based on user-provided
+    tradition name, then returns the prediction from that tradition's model.
+
+    Traditions:
+        - oap: Open Aurignacian Project (Italy) — full flake/blade/core typology
+        - levantine: Levantine Acheulean handaxes
+        - coads: COADS projectile points (Ohio)
+        - experimental: Lombao + Morales experimental cores/retouch
+    """
+
+    def __init__(self) -> None:
+        self.models: dict[str, ClassifierModel | HierarchicalClassifier] = {}
+        self.tradition_classes: dict[str, list[str]] = {}
+        self.default_tradition: str = "oap"
+
+    def add_model(
+        self,
+        tradition: str,
+        model: ClassifierModel | HierarchicalClassifier,
+        classes: list[str],
+    ) -> None:
+        """Register a tradition-specific model."""
+        self.models[tradition] = model
+        self.tradition_classes[tradition] = classes
+
+    @property
+    def traditions(self) -> list[str]:
+        return list(self.models.keys())
+
+    def predict(
+        self, X: np.ndarray, tradition: str | None = None,
+    ) -> np.ndarray:
+        """Predict class labels for the given tradition.
+
+        Args:
+            X: Feature matrix.
+            tradition: Tradition identifier. Falls back to default if None.
+
+        Returns:
+            Array of predicted class labels.
+        """
+        t = tradition or self.default_tradition
+        if t not in self.models:
+            t = self.default_tradition
+        model = self.models[t]
+        if hasattr(model, "predict"):
+            return model.predict(X)
+        return np.array([model._classes[0]] * X.shape[0])
+
+    def predict_proba(
+        self, X: np.ndarray, tradition: str | None = None,
+    ) -> np.ndarray:
+        """Return probability matrix for the given tradition's classes."""
+        t = tradition or self.default_tradition
+        if t not in self.models:
+            t = self.default_tradition
+        model = self.models[t]
+        if hasattr(model, "predict_proba"):
+            return model.predict_proba(X)
+        # Fallback: one-hot for single-class models
+        n = X.shape[0]
+        classes = self.tradition_classes.get(t, ["Unknown"])
+        probs = np.zeros((n, len(classes)))
+        probs[:, 0] = 1.0
+        return probs
+
+
 class OrdinalTechnologicalPipeline:
     """Sklearn-compatible hierarchical classifier for Technological typology.
 
@@ -632,7 +871,7 @@ class ClassifierModel:
         label = self._classes[class_idx]
         confidence = round(float(probs[class_idx]), 4)
 
-        # Feature importances (ordinal pipeline doesn't expose these)
+        # Feature importances (ordinal/hierarchical pipelines may not expose these)
         if hasattr(self._model, "feature_importances_"):
             importances = self._model.feature_importances_
         elif hasattr(self._model, "calibrated_classifiers_"):
@@ -640,6 +879,9 @@ class ClassifierModel:
         elif hasattr(self._model, "level1"):
             # Hierarchical ordinal model — use Level-1 RF importances as proxy
             importances = self._model.level1.feature_importances_ if hasattr(self._model.level1, "feature_importances_") else None
+        elif hasattr(self._model, "root_rf") and self._model.root_rf is not None:
+            # Hierarchical cascade — use root node importances as proxy
+            importances = self._model.root_rf.feature_importances_
         else:
             importances = None
 
@@ -805,18 +1047,6 @@ class ClassifierModel:
         self._correction_count = 0
 
 
-def train_model(
-    feature_vectors: list[LithicFeatureVector],
-    labels: list[str],
-    typology_name: str = "custom",
-) -> ClassifierModel:
-    """Train a new classifier from labelled feature vectors."""
-    X = np.array([fv.to_array() for fv in feature_vectors])
-    y = np.array(labels)
-    classes = sorted(set(labels))
-
-    # Increase tree depth for larger typologies (more classes need deeper trees)
-    # n_estimators=200 keeps each model ~40-48 MB, under GitHub's 100 MB file limit
 # ── Interaction features (derived from the 22 core morphometrics) ──
 # These capture non-linear relationships the RF's axis-aligned splits
 # may miss. Computed on-the-fly at both training and inference time.
@@ -889,8 +1119,22 @@ def train_model(
     feature_vectors: list[LithicFeatureVector],
     labels: list[str],
     typology_name: str = "custom",
+    sample_weight: np.ndarray | None = None,
 ) -> ClassifierModel:
-    """Train a new classifier from labelled feature vectors."""
+    """Train a new classifier from labelled feature vectors.
+
+    Args:
+        feature_vectors: List of LithicFeatureVector objects.
+        labels: Corresponding class labels.
+        typology_name: Name for this trained model.
+        sample_weight: Per-sample weights. If None, uses class_weight='balanced'.
+            If provided, this is multiplied with the class_weight effect
+            (sklearn multiplies sample_weight with class_weight internally).
+
+    Note:
+        When sample_weight is used with CalibratedClassifierCV, the weights
+        are passed through to the base estimator on each CV fold.
+    """
     X = np.array([fv.to_array() for fv in feature_vectors])
     # Append interaction features
     interactions = np.array([compute_interactions(fv.to_array()) for fv in feature_vectors])
@@ -911,10 +1155,16 @@ def train_model(
 
     if len(classes) >= 2:
         calibrated = CalibratedClassifierCV(base_rf, cv=min(3, len(classes)))
-        calibrated.fit(X, y)
+        if sample_weight is not None:
+            calibrated.fit(X, y, sample_weight=sample_weight)
+        else:
+            calibrated.fit(X, y)
         model._model = calibrated
     else:
-        base_rf.fit(X, y)
+        if sample_weight is not None:
+            base_rf.fit(X, y, sample_weight=sample_weight)
+        else:
+            base_rf.fit(X, y)
         model._model = base_rf
 
     return model
