@@ -1,10 +1,10 @@
 {
-  "benchmark_date": "2026-06-04T06:23:29.599942",
+  "benchmark_date": "2026-06-04T09:14:41.617035",
   "classifiers": [
     "basic",
     "bordes",
     "technological"
   ],
   "n_artefacts": 3415,
-  "n_features": 32
+  "n_features": 47
 }

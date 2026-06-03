@@ -8,6 +8,7 @@ Usage:
 """
 
 import csv
+import gc
 import sys
 import time
 import joblib
@@ -279,7 +280,7 @@ def main() -> None:
 
         # Filter out low-frequency classes (< 3 samples)
         min_samples = 3
-        valid = [(fv, lbl) for fv, lbl in zip(feature_vectors, labels) 
+        valid = [(fv, lbl, r['artefact_id']) for fv, lbl, r in zip(feature_vectors, labels, rows) 
                  if labels.count(lbl) >= min_samples]
         if len(valid) < len(feature_vectors):
             dropped = len(feature_vectors) - len(valid)
@@ -289,11 +290,29 @@ def main() -> None:
             print(f"  WARNING: Only {len(valid)} samples. Skipping.")
             continue
 
-        fv_list, lbl_list = zip(*valid)
+        fv_list, lbl_list, valid_aids = zip(*valid)
+        valid_aids = list(valid_aids)
         X_core = np.array([fv.to_array() for fv in fv_list])
         from lithicore._classification import compute_interactions
         X_inter = np.array([compute_interactions(row) for row in X_core])
         X_sub = np.concatenate([X_core, X_inter], axis=1)
+
+        # ── Optional PH feature augmentation ──
+        # If PH features have been pre-computed (via batch_ph.py), load and
+        # augment the feature matrix for artefacts with cached features.
+        from lithicore._ph_features import CACHE_DIR, load_ph_matrix
+        X_ph, ph_valid_idx = load_ph_matrix(valid_aids, cache_dir=CACHE_DIR)
+        if X_ph is not None and len(ph_valid_idx) > 0:
+            # Create augmented X with PH features where available
+            # Start with original features for ALL samples
+            n_ph = X_ph.shape[1]
+            X_ph_full = np.zeros((len(X_sub), n_ph), dtype=float)
+            for i_ph, i_orig in enumerate(ph_valid_idx):
+                if i_orig < len(X_ph_full):
+                    X_ph_full[i_orig] = X_ph[i_ph]
+            X_sub = np.concatenate([X_sub, X_ph_full], axis=1)
+            print(f"  PH loaded: +{n_ph} dims for {len(ph_valid_idx)}/{len(X_sub)} artefacts")
+            del X_ph, X_ph_full
 
         # ── Dataset-based sample weights ──
         # Counteract OAP dominance (71% of data) by weighting each sample
@@ -310,11 +329,12 @@ def main() -> None:
             if 'morales' in nl: return 'Morales'
             return 'Other'
 
-        # Map the valid rows to their dataset groups
-        # (the valid filter may have dropped some rows, so we need valid_rows)
-        valid_rows = [rows[i] for i, _ in enumerate(zip(feature_vectors, labels))
-                      if labels.count(labels[i]) >= min_samples][:len(fv_list)]
-        ds_groups = [dataset_group(r.get('dataset', '')) for r in valid_rows]
+        # Map artefact IDs to their dataset groups for weighting
+        ds_groups = []
+        aid_to_row = {r['artefact_id']: r for r in rows}
+        for aid in valid_aids:
+            row = aid_to_row.get(aid, {})
+            ds_groups.append(dataset_group(row.get('dataset', '')))
         from collections import Counter
         group_counts = Counter(ds_groups)
         total = len(ds_groups)

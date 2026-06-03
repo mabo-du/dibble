@@ -27,6 +27,7 @@ import time
 from collections import Counter
 from pathlib import Path
 
+import joblib
 import numpy as np
 
 # ── Path setup (works for both `python -m` and direct execution) ──
@@ -35,7 +36,7 @@ _src_dir = _script_dir.parent.parent / "lithicore" / "src"
 if str(_src_dir) not in sys.path:
     sys.path.insert(0, str(_src_dir))
 
-from lithicore._classification import ClassifierModel  # noqa: E402
+from lithicore._classification import ClassifierModel as _ClassifierModel  # noqa: E402
 from lithicore._models import LithicFeatureVector  # noqa: E402 — used in load_matrix()
 
 PROJECT_ROOT = _script_dir.parent.parent
@@ -432,6 +433,19 @@ def main() -> None:
     from lithicore._classification import compute_interactions
     X_inter = np.array([compute_interactions(row) for row in X_core])
     X = np.concatenate([X_core, X_inter], axis=1)
+    # Also load PH features if available
+    from lithicore._ph_features import CACHE_DIR, load_ph_matrix
+    all_aids = [r['artefact_id'] for r in rows]
+    X_ph, ph_valid_idx = load_ph_matrix(all_aids, cache_dir=CACHE_DIR)
+    if X_ph is not None and len(ph_valid_idx) > 0:
+        n_ph = X_ph.shape[1]
+        X_ph_full = np.zeros((len(X), n_ph), dtype=float)
+        for i_ph, i_orig in enumerate(ph_valid_idx):
+            if i_orig < len(X_ph_full):
+                X_ph_full[i_orig] = X_ph[i_ph]
+        X = np.concatenate([X, X_ph_full], axis=1)
+        print(f"  PH features loaded: +{n_ph} dims ({X.shape[1]} total)")
+    del X_ph, X_ph_full, all_aids
     print(f"  {len(feature_vectors)} artefacts, {X.shape[1]} features ({time.time()-t0:.1f}s)")
 
     # Free feature_vectors list — we only need X and rows from here
@@ -501,7 +515,7 @@ def main() -> None:
 
         print(f"  Loading model ({model_path.stat().st_size / 1e6:.0f} MB)...")
         t1 = time.time()
-        model = ClassifierModel.load_pre_trained(sys_name)
+        model = _ClassifierModel.load_pre_trained(sys_name)
         print(f"  Loaded in {time.time()-t1:.1f}s")
 
         # Predict on full training set (batch prediction via raw model)
@@ -550,7 +564,104 @@ def main() -> None:
     del X, rows, master_lookup
     gc.collect()
 
-    # ── Phase 3: Generate report ──
+    # ── Phase 3: Tradition-specific evaluation ──
+    print(f"\n{'─'*60}")
+    print("  Tradition-Specific Evaluation")
+    print(f"{'─'*60}")
+
+    def dataset_group(name: str) -> str:
+        nl = name.lower()
+        if any(x in nl for x in ['fumane', 'castelcivita', 'cala', 'bombrini', 'edgeangle']):
+            return 'OAP'
+        if 'levantine' in nl: return 'Levantine'
+        if 'coads' in nl: return 'COADS'
+        if 'lombao' in nl or 'morales' in nl: return 'Experimental'
+        return 'Other'
+
+    # Reload X and rows (they were freed above)
+    feature_vectors, rows = load_matrix(MATRIX_PATH)
+    X_core = np.array([fv.to_array() for fv in feature_vectors])
+    X_inter = np.array([compute_interactions(row) for row in X_core])
+    X = np.concatenate([X_core, X_inter], axis=1)
+    # Also load PH features
+    all_aids = [r['artefact_id'] for r in rows]
+    X_ph, ph_valid_idx = load_ph_matrix(all_aids, cache_dir=CACHE_DIR)
+    if X_ph is not None and len(ph_valid_idx) > 0:
+        n_ph = X_ph.shape[1]
+        X_ph_full = np.zeros((len(X), n_ph), dtype=float)
+        for i_ph, i_orig in enumerate(ph_valid_idx):
+            if i_orig < len(X_ph_full):
+                X_ph_full[i_orig] = X_ph[i_ph]
+        X = np.concatenate([X, X_ph_full], axis=1)
+    del feature_vectors, X_ph, X_ph_full, all_aids; gc.collect()
+
+    # Reload metadata
+    master_lookup = {}
+    for candidate in raw_candidates:
+        d = candidate.resolve() if candidate.is_symlink() else candidate
+        if d.is_dir() and any(d.glob("*_metadata.csv")):
+            for csv_path in sorted(d.glob("*_metadata.csv")) + sorted(d.glob("*_Dataset.csv")):
+                with open(csv_path) as f:
+                    for r in csv.DictReader(f):
+                        aid = r.get('ID', '').strip()
+                        if aid: master_lookup[aid] = r
+            break
+
+    for sys_name, _, display_name in TYPOLOGY_MODELS:
+        router_path = MODELS_DIR / f"typology_{sys_name}_traditions.joblib"
+        if not router_path.exists():
+            print(f"\n  {display_name}: tradition router not found (run retrain.py)")
+            continue
+
+        print(f"\n  {display_name} — Per-Tradition Accuracy:")
+        print(f"  {'Tradition':<20} {'Samples':>8} {'Classes':>8} {'Accuracy':>10}")
+        print(f"  {'-'*48}")
+
+        labels = get_labels(rows, sys_name, master_lookup)
+        router = joblib.load(str(router_path))
+
+        for trad_name in sorted(router.traditions):
+            # Get this tradition's data
+            trad_mask = [dataset_group(r.get('dataset', '')) == trad_name for r in rows]
+            if not any(trad_mask):
+                continue
+            X_trad = X[trad_mask]
+            y_trad = np.array([labels[i] for i, m in enumerate(trad_mask) if m])
+            classes_trad = sorted(set(y_trad))
+
+            # Predict using tradition-specific model (trained on 32 features, not 47)
+            X_trad_32 = X_trad[:, :32]  # Slice to core 32 features
+            trad_model = router.models[trad_name]
+            if hasattr(trad_model, 'predict'):
+                y_pred = trad_model.predict(X_trad_32)
+            else:
+                y_pred = np.full(len(y_trad), trad_model._classes[0])
+
+            acc = float(np.mean(y_pred == y_trad))
+            print(f"  {trad_name:<20} {len(y_trad):>8} {len(classes_trad):>8} {acc:>10.1%}")
+
+        # Also test the combined model on each tradition for comparison
+        model_path = MODELS_DIR / f"typology_{sys_name}.joblib"
+        if model_path.exists():
+            combined = _ClassifierModel.load_pre_trained(sys_name)
+            print(f"\n  Combined model reference:")
+            for trad_name in sorted(router.traditions):
+                trad_mask = [dataset_group(r.get('dataset', '')) == trad_name for r in rows]
+                if not any(trad_mask):
+                    continue
+                X_trad = X[trad_mask]
+                y_trad = np.array([labels[i] for i, m in enumerate(trad_mask) if m])
+                X_trad_32 = X_trad[:, :32]  # slice to 32 features
+                try:
+                    probs = combined._model.predict_proba(X_trad)
+                    y_pred = [combined._classes[int(np.argmax(p))] for p in probs]
+                    acc = float(np.mean(y_pred == y_trad))
+                    print(f"    {trad_name:<18} combined model: {acc:.1%}")
+                except Exception as e:
+                    print(f"    {trad_name:<18} combined model error: {e}")
+            del combined; gc.collect()
+
+    # ── Phase 4: Generate report ──
     print(f"\n{'─'*60}")
     print("  Generating report...")
 
