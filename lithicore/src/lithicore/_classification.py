@@ -618,7 +618,9 @@ class ClassifierModel:
             raise RuntimeError("No model loaded. Call load_pre_trained() or train() first.")
 
         start = time.time()
-        X = feature_vector.to_array().reshape(1, -1)
+        core = feature_vector.to_array().reshape(1, -1)
+        inter = compute_interactions(core[0]).reshape(1, -1)
+        X = np.concatenate([core, inter], axis=1)
 
         probs = self._model.predict_proba(X)[0]
         class_idx = int(np.argmax(probs))
@@ -815,10 +817,94 @@ def train_model(
 
     # Increase tree depth for larger typologies (more classes need deeper trees)
     # n_estimators=200 keeps each model ~40-48 MB, under GitHub's 100 MB file limit
+# ── Interaction features (derived from the 22 core morphometrics) ──
+# These capture non-linear relationships the RF's axis-aligned splits
+# may miss. Computed on-the-fly at both training and inference time.
+# See docs/research-prompts/deep-research-prompt-accuracy-innovation.md
+# Expert 3 for rationale.
+
+INTERACTION_NAMES: list[str] = [
+    "elongation_x_flatness",       # shape index
+    "length_x_width",               # size-area proxy
+    "length_div_thickness",         # robustness (slenderness)
+    "edge_mean_x_std",              # edge variability (high = notched/denticulate)
+    "area_div_volume",              # specific surface area
+    "curvature_x_symmetry",         # global regularity
+    "scar_density",                 # scar_count / surface_area
+    "elongation_sq",                # non-linear elongation
+    "platform_x_flatness",          # platform × cross-section
+    "compactness_x_elongation",     # mass × shape
+]
+
+# Indices into the 22-element FEATURE_NAMES array for computing interactions
+# Ordered as: length, width, thickness, area, volume, elongation, flatness,
+# compactness, rel_thickness, scar_count, mean_scar_area, platform_angle,
+# edge_mean, edge_std, edge_skew, edge_kurt, curvature, cross_section,
+# symmetry, com_z_ratio, dorsal_ridge, roughness
+
+_FIDX = LithicFeatureVector.FEATURE_NAMES.index  # type: ignore[attr-defined]
+
+
+def compute_interactions(features_22: np.ndarray) -> np.ndarray:
+    """Compute 10 interaction features from the 22 core morphometrics.
+
+    Args:
+        features_22: 22-element array in FEATURE_NAMES order.
+
+    Returns:
+        10-element array in INTERACTION_NAMES order.
+    """
+    f = features_22  # alias for readability
+    # Named indices — safe as long as FEATURE_NAMES doesn't change order
+    L, W, T, A, V = 0, 1, 2, 3, 4        # length, width, thickness, area, volume
+    EL, FL = 5, 6                          # elongation, flatness
+    SC, MSC = 9, 10                        # scar_count, mean_scar_area
+    PA = 11                                # platform_angle_deg
+    EM, ES = 12, 13                        # edge_mean, edge_std
+    CV = 16                                # curvature_index
+    CS = 17                                # cross_section_profile
+    SY = 18                                # symmetry_score
+
+    # Avoid division by zero
+    eps = 1e-8
+
+    return np.array([
+        f[EL] * f[FL],                                    # elongation × flatness
+        f[L] * f[W],                                      # length × width
+        f[L] / max(f[T], eps),                            # length / thickness
+        f[EM] * max(f[ES], eps),                          # edge_mean × edge_std
+        f[A] / max(f[V], eps),                            # area / volume
+        f[CV] * f[SY],                                    # curvature × symmetry
+        f[SC] / max(f[A], eps),                           # scar density
+        f[EL] ** 2,                                       # elongation²
+        f[PA] * f[FL] / 100,                              # platform × flatness (scaled)
+        f[V] * max(f[EL], eps) / max(f[L] ** 3, eps),     # compactness × elongation
+    ])
+
+
+# ── End interaction features ──
+
+
+def train_model(
+    feature_vectors: list[LithicFeatureVector],
+    labels: list[str],
+    typology_name: str = "custom",
+) -> ClassifierModel:
+    """Train a new classifier from labelled feature vectors."""
+    X = np.array([fv.to_array() for fv in feature_vectors])
+    # Append interaction features
+    interactions = np.array([compute_interactions(fv.to_array()) for fv in feature_vectors])
+    X = np.concatenate([X, interactions], axis=1)
+    y = np.array(labels)
+    classes = sorted(set(labels))
+
+    # Hyperparameter-optimized: max_features=0.3 reduces tree correlation
+    # improving ensemble diversity. Depth is dynamic per typology.
     depth = min(20, max(12, len(classes) * 2))
     base_rf = RandomForestClassifier(
         n_estimators=200, max_depth=depth,
-        min_samples_leaf=2, class_weight="balanced", random_state=42,
+        min_samples_leaf=2, max_features=0.3,
+        class_weight="balanced", random_state=42,
     )
     model = ClassifierModel(typology_name=typology_name)
     model._classes = classes

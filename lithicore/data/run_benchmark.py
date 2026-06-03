@@ -428,7 +428,10 @@ def main() -> None:
     print("\nLoading training matrix...")
     t0 = time.time()
     feature_vectors, rows = load_matrix(MATRIX_PATH)
-    X = np.array([fv.to_array() for fv in feature_vectors])
+    X_core = np.array([fv.to_array() for fv in feature_vectors])
+    from lithicore._classification import compute_interactions
+    X_inter = np.array([compute_interactions(row) for row in X_core])
+    X = np.concatenate([X_core, X_inter], axis=1)
     print(f"  {len(feature_vectors)} artefacts, {X.shape[1]} features ({time.time()-t0:.1f}s)")
 
     # Free feature_vectors list — we only need X and rows from here

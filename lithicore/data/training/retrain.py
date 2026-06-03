@@ -277,7 +277,10 @@ def main() -> None:
             continue
 
         fv_list, lbl_list = zip(*valid)
-        X_sub = np.array([fv.to_array() for fv in fv_list])
+        X_core = np.array([fv.to_array() for fv in fv_list])
+        from lithicore._classification import compute_interactions
+        X_inter = np.array([compute_interactions(row) for row in X_core])
+        X_sub = np.concatenate([X_core, X_inter], axis=1)
 
         # Train
         t0 = time.time()

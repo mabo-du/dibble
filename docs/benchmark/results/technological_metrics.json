@@ -3,51 +3,51 @@
   "per_class": [
     {
       "class": "Handaxe",
-      "precision": 0.975,
-      "recall": 0.985,
-      "f1": 0.98,
+      "precision": 0.974,
+      "recall": 0.988,
+      "f1": 0.981,
       "support": 1018
     },
     {
       "class": "Initialization",
       "precision": 1.0,
-      "recall": 0.882,
-      "f1": 0.937,
+      "recall": 0.632,
+      "f1": 0.774,
       "support": 76
     },
     {
       "class": "Maintenance",
-      "precision": 0.869,
-      "recall": 0.897,
-      "f1": 0.883,
+      "precision": 0.858,
+      "recall": 0.913,
+      "f1": 0.885,
       "support": 311
     },
     {
       "class": "Optimal",
-      "precision": 0.917,
-      "recall": 0.933,
-      "f1": 0.925,
+      "precision": 0.904,
+      "recall": 0.95,
+      "f1": 0.926,
       "support": 854
     },
     {
       "class": "Other",
-      "precision": 0.8,
-      "recall": 0.978,
-      "f1": 0.88,
+      "precision": 0.826,
+      "recall": 0.97,
+      "f1": 0.892,
       "support": 503
     },
     {
       "class": "Semi-cortical",
       "precision": 1.0,
-      "recall": 0.429,
-      "f1": 0.6,
+      "recall": 0.437,
+      "f1": 0.608,
       "support": 238
     },
     {
       "class": "Undetermined",
       "precision": 1.0,
-      "recall": 1.0,
-      "f1": 1.0,
+      "recall": 0.964,
+      "f1": 0.982,
       "support": 28
     },
     {
@@ -60,21 +60,21 @@
   ],
   "confusion_matrix": [
     [
-      1003,
+      1006,
       0,
       1,
       0,
-      14,
+      11,
       0,
       0,
       0
     ],
     [
-      0,
-      67,
       1,
-      4,
-      4,
+      48,
+      11,
+      8,
+      8,
       0,
       0,
       0
@@ -82,29 +82,19 @@
     [
       2,
       0,
-      279,
-      22,
-      8,
+      284,
+      23,
+      2,
       0,
       0,
       0
     ],
     [
-      4,
+      3,
       0,
-      21,
-      797,
-      32,
-      0,
-      0,
-      0
-    ],
-    [
-      9,
-      0,
-      1,
-      1,
-      492,
+      14,
+      811,
+      26,
       0,
       0,
       0
@@ -112,10 +102,20 @@
     [
       11,
       0,
+      3,
+      1,
+      488,
+      0,
+      0,
+      0
+    ],
+    [
+      9,
+      0,
       18,
-      43,
-      64,
-      102,
+      52,
+      55,
+      104,
       0,
       0
     ],
@@ -123,17 +123,17 @@
       0,
       0,
       0,
+      1,
       0,
       0,
-      0,
-      28,
+      27,
       0
     ],
     [
+      1,
       0,
       0,
-      0,
-      2,
+      1,
       1,
       0,
       0,
@@ -152,8 +152,8 @@
   ],
   "n_samples": 3415,
   "n_classes": 8,
-  "classification_report": "                precision    recall  f1-score   support\n\n       Handaxe       0.97      0.99      0.98      1018\nInitialization       1.00      0.88      0.94        76\n   Maintenance       0.87      0.90      0.88       311\n       Optimal       0.92      0.93      0.93       854\n         Other       0.80      0.98      0.88       503\n Semi-cortical       1.00      0.43      0.60       238\n  Undetermined       1.00      1.00      1.00        28\n       Unknown       1.00      0.99      1.00       387\n\n      accuracy                           0.92      3415\n     macro avg       0.95      0.89      0.90      3415\n  weighted avg       0.93      0.92      0.92      3415\n",
+  "classification_report": "                precision    recall  f1-score   support\n\n       Handaxe       0.97      0.99      0.98      1018\nInitialization       1.00      0.63      0.77        76\n   Maintenance       0.86      0.91      0.88       311\n       Optimal       0.90      0.95      0.93       854\n         Other       0.83      0.97      0.89       503\n Semi-cortical       1.00      0.44      0.61       238\n  Undetermined       1.00      0.96      0.98        28\n       Unknown       1.00      0.99      1.00       387\n\n      accuracy                           0.92      3415\n     macro avg       0.95      0.86      0.88      3415\n  weighted avg       0.93      0.92      0.92      3415\n",
   "name": "technological",
   "display_name": "Technological",
-  "n_features": 22
+  "n_features": 32
 }
