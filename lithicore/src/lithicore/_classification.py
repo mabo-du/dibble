@@ -257,6 +257,238 @@ def _compute_surface_roughness(mesh: trimesh.Trimesh) -> float:
         return 1.0
 
 
+class OrdinalTechnologicalPipeline:
+    """Sklearn-compatible hierarchical classifier for Technological typology.
+
+    Level 1: Binary RF separates reduction-stage artefacts from non-reduction.
+    Level 2a: LogisticAT (ordinal) for stages: Init → Semi-cortical → Optimal → Maintenance.
+    Level 2b: Multi-class RF for non-reduction classes (Handaxe, Other, etc.).
+
+    Exposes sklearn-compatible predict() and predict_proba() for seamless use
+    with the existing benchmark and evaluation pipeline.
+
+    The ordinal branch correctly penalises adjacent-stage confusion less than
+    ordinal↔non-ordinal confusion, which is the key benefit over flat multi-class.
+    """
+
+    def __init__(
+        self,
+        level1=None,
+        ord_model=None,
+        non_ord_model=None,
+        ordinal_classes: list[str] | None = None,
+        ordinal_map: dict[str, int] | None = None,
+        inv_ordinal_map: dict[int, str] | None = None,
+        non_ordinal_classes: list[str] | None = None,
+        all_classes: list[str] | None = None,
+    ):
+        self.level1 = level1
+        self.ord_model = ord_model
+        self.non_ord_model = non_ord_model
+        self.ordinal_classes = ordinal_classes or []
+        self.ordinal_map = ordinal_map or {}
+        self.inv_ordinal_map = inv_ordinal_map or {}
+        self.non_ordinal_classes = non_ordinal_classes or []
+        self.all_classes = all_classes or []
+
+    def fit(self, X: np.ndarray, y: np.ndarray) -> OrdinalTechnologicalPipeline:
+        """Fit all three levels of the hierarchical pipeline.
+
+        Level 2a uses cumulative-link (threshold) Random Forests for the
+        ordinal reduction stages — each stage-separator model preserves
+        RF's non-linear separation, unlike linear LogisticAT.
+
+        Args:
+            X: Feature matrix (n_samples, n_features).
+            y: Target labels (string class names).
+
+        Returns:
+            self (fitted pipeline).
+        """
+        from sklearn.ensemble import RandomForestClassifier
+
+        if isinstance(X, list):
+            X = np.array(X)
+        y_arr = np.array(y)
+
+        # Level 1: reduction vs non-reduction
+        l1_labels = np.array([
+            "reduction" if lbl in self.ordinal_map else "non_reduction"
+            for lbl in y_arr
+        ])
+        self.level1 = RandomForestClassifier(
+            n_estimators=200, max_depth=12,
+            min_samples_leaf=2, class_weight="balanced",
+            random_state=42, n_jobs=1,
+        )
+        self.level1.fit(X, l1_labels)
+
+        # Level 2a: Cumulative-link ordinal RF for reduction stages
+        ord_mask = np.array([lbl in self.ordinal_map for lbl in y_arr])
+        X_ord = X[ord_mask]
+        y_ord = np.array([self.ordinal_map[lbl] for lbl in y_arr if lbl in self.ordinal_map])
+
+        if len(y_ord) >= 10:
+            n_ord_classes = len(self.ordinal_classes)
+            # Train K-1 binary threshold models: P(class > k)
+            self._ord_thresholds = []
+            for k in range(n_ord_classes - 1):
+                y_binary = (y_ord > k).astype(int)
+                # Handle edge case where threshold has only one class
+                if len(set(y_binary)) < 2:
+                    self._ord_thresholds.append(None)
+                    continue
+                thr_rf = RandomForestClassifier(
+                    n_estimators=100, max_depth=8,
+                    min_samples_leaf=3, class_weight="balanced",
+                    random_state=42 + k, n_jobs=1,
+                )
+                thr_rf.fit(X_ord, y_binary)
+                self._ord_thresholds.append(thr_rf)
+        else:
+            self._ord_thresholds = []
+
+        # Level 2b: multi-class RF for non-reduction classes
+        non_ord_mask = ~ord_mask
+        X_non = X[non_ord_mask]
+        y_non = np.array([lbl for lbl, m in zip(y_arr, non_ord_mask) if m])
+
+        if len(np.unique(y_non)) >= 2:
+            n_classes = len(np.unique(y_non))
+            self.non_ord_model = RandomForestClassifier(
+                n_estimators=200, max_depth=min(20, max(12, n_classes * 2)),
+                min_samples_leaf=2, class_weight="balanced",
+                random_state=42, n_jobs=1,
+            )
+            self.non_ord_model.fit(X_non, y_non)
+        else:
+            self.non_ord_model = None
+
+        return self
+
+    def _predict_ordinal_proba(self, X: np.ndarray) -> np.ndarray:
+        """Cumulative-link probability estimates for ordinal stages.
+
+        For K ordinal classes, trains K-1 binary classifiers P(class > k).
+        Then:
+            P(class=0) = 1 - P(class > 0)
+            P(class=k) = P(class > k-1) - P(class > k)  for 0 < k < K-1
+            P(class=K-1) = P(class > K-2)
+
+        Returns (n, n_ordinal_classes) probability matrix.
+        """
+        n = X.shape[0]
+        K = len(self.ordinal_classes)
+        if K < 2 or not self._ord_thresholds:
+            probs = np.zeros((n, K))
+            probs[:, 0] = 1.0
+            return probs
+
+        # Get P(class > k) for each threshold
+        p_greater = np.zeros((n, K - 1))
+        for k, thr_model in enumerate(self._ord_thresholds):
+            if thr_model is None:
+                p_greater[:, k] = 0.0  # No samples above this threshold
+            else:
+                probs_k = thr_model.predict_proba(X)
+                # Find index of class "1" (True = class > k)
+                try:
+                    idx_one = list(thr_model.classes_).index(1)
+                except ValueError:
+                    idx_one = 1 if len(thr_model.classes_) > 1 else 0
+                p_greater[:, k] = probs_k[:, idx_one]
+
+        # Convert to per-class probabilities
+        result = np.zeros((n, K))
+        result[:, 0] = 1.0 - p_greater[:, 0]
+        for k in range(1, K - 1):
+            result[:, k] = p_greater[:, k - 1] - p_greater[:, k]
+        result[:, K - 1] = p_greater[:, K - 2]
+
+        # Clip numerical noise
+        result = np.clip(result, 0.0, 1.0)
+        row_sums = result.sum(axis=1, keepdims=True)
+        row_sums = np.where(row_sums == 0, 1.0, row_sums)
+        return result / row_sums
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        """Predict class labels for each row in X.
+
+        Routes through Level 1 → appropriate Level 2 model per sample.
+        """
+        if isinstance(X, list):
+            X = np.array(X)
+        if X.ndim == 1:
+            X = X.reshape(1, -1)
+
+        # Level 1: reduction vs non-reduction
+        l1_pred = self.level1.predict(X)
+
+        predictions: list[str] = []
+        for i, l1_label in enumerate(l1_pred):
+            if l1_label == "reduction":
+                # Cumulative-link ordinal prediction
+                ord_probs = self._predict_ordinal_proba(X[i:i + 1])[0]
+                ord_pred = int(np.argmax(ord_probs))
+                predictions.append(self.inv_ordinal_map[ord_pred])
+            else:
+                # Non-ordinal model predicts string label
+                if self.non_ord_model is not None:
+                    pred = self.non_ord_model.predict(X[i:i + 1])[0]
+                else:
+                    pred = self.non_ordinal_classes[0] if self.non_ordinal_classes else "Unknown"
+                predictions.append(pred)
+        return np.array(predictions)
+
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        """Return (n, n_all_classes) probability matrix.
+
+        For reduction-stage artefacts: cumulative-link ordinal probabilities
+        placed in the correct columns of the full class array.
+        For non-reduction artefacts: RF predict_proba mapped to full columns.
+        """
+        if isinstance(X, list):
+            X = np.array(X)
+        if X.ndim == 1:
+            X = X.reshape(1, -1)
+
+        n = X.shape[0]
+        n_classes = len(self.all_classes)
+        class_to_idx = {c: i for i, c in enumerate(self.all_classes)}
+        result = np.zeros((n, n_classes), dtype=float)
+
+        l1_pred = self.level1.predict(X)
+
+        for i in range(n):
+            if l1_pred[i] == "reduction":
+                ord_probs = self._predict_ordinal_proba(X[i:i + 1])[0]
+                for ord_idx, prob in enumerate(ord_probs):
+                    cls_name = self.inv_ordinal_map[ord_idx]
+                    col = class_to_idx[cls_name]
+                    result[i, col] = prob
+            else:
+                if self.non_ord_model is not None:
+                    probs = self.non_ord_model.predict_proba(X[i:i + 1])[0]
+                    for cls_name, prob in zip(
+                        self.non_ord_model.classes_, probs
+                    ):
+                        col = class_to_idx[cls_name]
+                        result[i, col] = prob
+                else:
+                    single_cls = self.non_ordinal_classes[0] if self.non_ordinal_classes else "Unknown"
+                    result[i, class_to_idx[single_cls]] = 1.0
+
+        # Normalise each row to sum to 1
+        row_sums = result.sum(axis=1, keepdims=True)
+        row_sums = np.where(row_sums == 0, 1.0, row_sums)
+        result = result / row_sums
+        return result
+
+    def get_params(self, deep: bool = True) -> dict:
+        """Required by sklearn for cross-validation compatibility."""
+        return {"alpha": getattr(self.ord_model, "alpha", 1.0) if self.ord_model else 1.0}
+
+
 class ClassifierModel:
     """Wraps a sklearn Random Forest classifier for lithic typology.
 
@@ -398,13 +630,20 @@ class ClassifierModel:
         label = self._classes[class_idx]
         confidence = round(float(probs[class_idx]), 4)
 
-        # Feature importances
-        if hasattr(self._model, "calibrated_classifiers_"):
-            importances = self._model.calibrated_classifiers_[0].estimator.feature_importances_
-        else:
+        # Feature importances (ordinal pipeline doesn't expose these)
+        if hasattr(self._model, "feature_importances_"):
             importances = self._model.feature_importances_
+        elif hasattr(self._model, "calibrated_classifiers_"):
+            importances = self._model.calibrated_classifiers_[0].estimator.feature_importances_
+        elif hasattr(self._model, "level1"):
+            # Hierarchical ordinal model — use Level-1 RF importances as proxy
+            importances = self._model.level1.feature_importances_ if hasattr(self._model.level1, "feature_importances_") else None
+        else:
+            importances = None
 
-        top_features = self._compute_feature_importances(feature_vector, importances)
+        top_features = []
+        if importances is not None:
+            top_features = self._compute_feature_importances(feature_vector, importances)
 
         alternatives = [
             (cls_name, round(float(probs[i]), 4))

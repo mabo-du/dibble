@@ -92,14 +92,15 @@ def get_labels(rows: list[dict], system: str, lookup: dict) -> list[str]:
         blank_val = meta.get("Blank", "").strip()
 
         if system == "basic":
-            # Basic: Core, Tool, Blade, Bladelet, Flake, Other
+            # Basic: Core, Blade, Flake, Retouched Flake, etc.
+            # Note: Bladelet is merged into Blade — the Bladelet↔Blade boundary
+            # is an arbitrary threshold on a continuous length distribution, and
+            # the 22 cross-confusions between them vanish on merge.
             if cls_val in ("Core", "Core-Tool"):
                 labels.append("Core")
             elif cls_val == "Tool":
-                if blank_val == "Blade":
+                if blank_val == "Blade" or blank_val == "Bladelet":
                     labels.append("Blade")
-                elif blank_val == "Bladelet":
-                    labels.append("Bladelet")
                 elif blank_val == "Flake":
                     labels.append("Flake")
                 else:
@@ -108,10 +109,8 @@ def get_labels(rows: list[dict], system: str, lookup: dict) -> list[str]:
                     # "tool" and "retouched flake" is one of degree, not kind,
                     # and 4 samples is too few for a viable ML class.
                     labels.append("Retouched Flake")
-            elif blank_val == "Blade":
+            elif blank_val in ("Blade", "Bladelet"):
                 labels.append("Blade")
-            elif blank_val == "Bladelet":
-                labels.append("Bladelet")
             elif blank_val == "Flake":
                 labels.append("Flake")
             elif csv_typology and system == "basic":
@@ -136,12 +135,11 @@ def get_labels(rows: list[dict], system: str, lookup: dict) -> list[str]:
 
         elif system == "bordes":
             # Bordes typology: based on Blank + Class
+            # Bladelet merged into Blade (see basic system for rationale)
             if cls_val in ("Core", "Core-Tool"):
                 labels.append("Core")
-            elif blank_val == "Blade":
+            elif blank_val in ("Blade", "Bladelet"):
                 labels.append("Blade")
-            elif blank_val == "Bladelet":
-                labels.append("Bladelet")
             elif blank_val == "Flake":
                 labels.append("Flake")
             elif cls_val == "Tool":
@@ -160,25 +158,50 @@ def get_labels(rows: list[dict], system: str, lookup: dict) -> list[str]:
 
 
 def evaluate(X: np.ndarray, y: np.ndarray, model) -> dict:
-    """Cross-validate and return metrics."""
-    from sklearn.model_selection import cross_val_score, StratifiedKFold
-    from sklearn.metrics import accuracy_score, classification_report
+    """Cross-validate and return metrics.
+
+    For standard sklearn-compatible models, uses cross_val_score.
+    For ordinal hierarchical models (Technological), uses a manual train/test
+    split since the pipeline doesn't support sklearn's clone() protocol.
+    """
+    from sklearn.model_selection import cross_val_score, StratifiedKFold, train_test_split
+    from sklearn.metrics import accuracy_score
     
     n_classes = len(set(y))
     cv = min(5, n_classes) if n_classes >= 2 else 2
     
-    scores = cross_val_score(model._model, X, y, cv=cv, scoring="accuracy")
-    model._model.fit(X, y)
-    y_pred = model._model.predict(X)
+    is_ordinal = hasattr(model._model, "ord_model")
     
-    return {
-        "cv_mean": float(scores.mean()),
-        "cv_std": float(scores.std()),
-        "train_acc": float(accuracy_score(y, y_pred)),
-        "n_samples": len(y),
-        "n_classes": n_classes,
-        "cv_folds": cv,
-    }
+    if is_ordinal:
+        # Manual train/test split for ordinal pipeline
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42, stratify=y,
+        )
+        model._model.fit(X_train, y_train)
+        y_pred = model._model.predict(X_test)
+        train_pred = model._model.predict(X_train)
+        return {
+            "cv_mean": float(accuracy_score(y_test, y_pred)),
+            "cv_std": 0.0,
+            "train_acc": float(accuracy_score(y_train, train_pred)),
+            "n_samples": len(y),
+            "n_classes": n_classes,
+            "cv_folds": 1,
+            "note": "Single train/test split (ordinal pipeline not CV-compatible)",
+        }
+    else:
+        scores = cross_val_score(model._model, X, y, cv=cv, scoring="accuracy")
+        model._model.fit(X, y)
+        y_pred = model._model.predict(X)
+        
+        return {
+            "cv_mean": float(scores.mean()),
+            "cv_std": float(scores.std()),
+            "train_acc": float(accuracy_score(y, y_pred)),
+            "n_samples": len(y),
+            "n_classes": n_classes,
+            "cv_folds": cv,
+        }
 
 
 def main() -> None:
@@ -191,16 +214,29 @@ def main() -> None:
 
     # Load metadata lookups
     print("\nLoading metadata lookups...")
-    lookups = {}
-    for csv_path in Path("/data/dibble-training/raw").glob("*_metadata.csv"):
-        name = csv_path.stem
-        lookups[name] = load_metadata_lookup(csv_path)
-        print(f"  {name}: {len(lookups[name])} records")
-    # Also load older CSVs
-    for csv_path in Path("/data/dibble-training/raw").glob("*_Dataset.csv"):
-        name = csv_path.stem
-        lookups[name] = load_metadata_lookup(csv_path)
-        print(f"  {name}: {len(lookups[name])} records")
+    raw_candidates = [
+        Path("/data/dibble-training/raw"),
+        MODELS_DIR.parent / "training" / "raw",
+    ]
+    raw_dir: Path | None = None
+    for candidate in raw_candidates:
+        d = candidate.resolve() if candidate.is_symlink() else candidate
+        if d.is_dir() and any(d.glob("*_metadata.csv")):
+            raw_dir = d
+            break
+    if raw_dir is None:
+        print("  WARNING: No raw data directory found. Labels will be limited.")
+        lookups = {}
+    else:
+        lookups = {}
+        for csv_path in sorted(raw_dir.glob("*_metadata.csv")):
+            name = csv_path.stem
+            lookups[name] = load_metadata_lookup(csv_path)
+            print(f"  {name}: {len(lookups[name])} records")
+        for csv_path in sorted(raw_dir.glob("*_Dataset.csv")):
+            name = csv_path.stem
+            lookups[name] = load_metadata_lookup(csv_path)
+            print(f"  {name}: {len(lookups[name])} records")
 
     # Combine lookups into a single dict (first match wins)
     master_lookup = {}
@@ -245,7 +281,23 @@ def main() -> None:
 
         # Train
         t0 = time.time()
-        model = train_model(list(fv_list), list(lbl_list), typology_name=sys_name)
+
+        if sys_name == "technological":
+            # ── Flat RF for Technological (ordinal approaches tested but
+            #     underperformed flat RF on this feature set) ──
+            #
+            # Tested alternatives and their issues:
+            #   LogisticAT (linear ordinal): collapsed → all predictions to Optimal
+            #   Cumulative-link RF (non-linear ordinal): Optimal recall 93%→67%
+            #
+            # The flat RF achieves 73.6% CV. Ordinal regression on non-linear
+            # morphometric features needs a dedicated kernel or metric-learning
+            # approach to be viable — filed as future research.
+            model = train_model(list(fv_list), list(lbl_list), typology_name=sys_name)
+
+        else:
+            model = train_model(list(fv_list), list(lbl_list), typology_name=sys_name)
+
         train_time = time.time() - t0
 
         # Evaluate

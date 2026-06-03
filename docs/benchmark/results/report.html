@@ -36,7 +36,7 @@
 </head>
 <body>
 <h1>Dibble Classifier Validation Report</h1>
-<p>Generated: 2026-06-03 12:51:34</p>
+<p>Generated: 2026-06-04 04:28:55</p>
 <p class="status pass">PASS</p>
 <p>Validated against the real <b>3415</b>-artefact
 training matrix (22 features).
@@ -49,19 +49,19 @@ Results include pre-trained model accuracy (full training set) and
 </div>
 
 
-<h2>Basic Morphological — 9 classes, 3415 samples</h2>
+<h2>Basic Morphological — 8 classes, 3415 samples</h2>
 <div class="summary">
 <div class="metrics">
   <div class="metric-card">
-    <div class="metric-value">96.8%</div>
+    <div class="metric-value">96.4%</div>
     <div class="metric-label">Pre-trained Accuracy</div>
   </div>
   <div class="metric-card" style="border-left: 3px solid #ffc107;">
-    <div class="metric-value">84.8% ± 0.7%</div>
+    <div class="metric-value">85.6% ± 1.1%</div>
     <div class="metric-label">Cross-Validation (5-fold)</div>
   </div>
   <div class="metric-card">
-    <div class="metric-value">9</div>
+    <div class="metric-value">8</div>
     <div class="metric-label">Classes</div>
   </div>
   <div class="metric-card">
@@ -77,33 +77,25 @@ Results include pre-trained model accuracy (full training set) and
 
 <tr>
   <td><b>Biface</b></td>
-  <td>0.985</td>
   <td>0.987</td>
-  <td style="color:green;font-weight:bold;">0.986</td>
+  <td>0.981</td>
+  <td style="color:green;font-weight:bold;">0.984</td>
   <td>1018</td>
 </tr>
 
 <tr>
   <td><b>Blade</b></td>
-  <td>0.934</td>
-  <td>0.923</td>
-  <td style="color:green;font-weight:bold;">0.928</td>
-  <td>401</td>
-</tr>
-
-<tr>
-  <td><b>Bladelet</b></td>
-  <td>0.983</td>
-  <td>0.978</td>
-  <td style="color:green;font-weight:bold;">0.981</td>
-  <td>592</td>
+  <td>0.986</td>
+  <td>0.961</td>
+  <td style="color:green;font-weight:bold;">0.973</td>
+  <td>993</td>
 </tr>
 
 <tr>
   <td><b>Core</b></td>
-  <td>0.958</td>
-  <td>0.965</td>
-  <td style="color:green;font-weight:bold;">0.962</td>
+  <td>0.928</td>
+  <td>0.960</td>
+  <td style="color:green;font-weight:bold;">0.944</td>
   <td>751</td>
 </tr>
 
@@ -117,9 +109,9 @@ Results include pre-trained model accuracy (full training set) and
 
 <tr>
   <td><b>Flake</b></td>
-  <td>0.908</td>
-  <td>0.908</td>
-  <td style="color:green;font-weight:bold;">0.908</td>
+  <td>0.858</td>
+  <td>0.874</td>
+  <td style="color:green;font-weight:bold;">0.866</td>
   <td>262</td>
 </tr>
 
@@ -154,7 +146,6 @@ Results include pre-trained model accuracy (full training set) and
 <tr><td class="cm-header">True \ Pred</td>
 <td class='cm-header'>Biface</td>
 <td class='cm-header'>Blade</td>
-<td class='cm-header'>Bladelet</td>
 <td class='cm-header'>Core</td>
 <td class='cm-header'>Experimental Core</td>
 <td class='cm-header'>Flake</td>
@@ -163,10 +154,9 @@ Results include pre-trained model accuracy (full training set) and
 <td class='cm-header'>Unmodified Flake</td>
 </tr>
 <tr><td class='cm-header'>Biface</td>
-<td class='cm-diagonal'>1005</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>13</td>
+<td class='cm-diagonal'>999</td>
+<td class=''>1</td>
+<td class=''>18</td>
 <td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
@@ -175,39 +165,25 @@ Results include pre-trained model accuracy (full training set) and
 </tr>
 <tr><td class='cm-header'>Blade</td>
 <td class=''>3</td>
-<td class='cm-diagonal'>370</td>
-<td class=''>9</td>
-<td class=''>6</td>
+<td class='cm-diagonal'>954</td>
+<td class=''>16</td>
 <td class=''>0</td>
-<td class=''>13</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-</tr>
-<tr><td class='cm-header'>Bladelet</td>
-<td class=''>0</td>
-<td class=''>13</td>
-<td class='cm-diagonal'>579</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
+<td class=''>20</td>
 <td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
 </tr>
 <tr><td class='cm-header'>Core</td>
-<td class=''>11</td>
-<td class=''>4</td>
+<td class=''>9</td>
+<td class=''>3</td>
+<td class='cm-diagonal'>721</td>
 <td class=''>0</td>
-<td class='cm-diagonal'>725</td>
-<td class=''>0</td>
-<td class=''>11</td>
+<td class=''>18</td>
 <td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
 </tr>
 <tr><td class='cm-header'>Experimental Core</td>
-<td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
@@ -219,11 +195,10 @@ Results include pre-trained model accuracy (full training set) and
 </tr>
 <tr><td class='cm-header'>Flake</td>
 <td class=''>1</td>
-<td class=''>9</td>
-<td class=''>1</td>
-<td class=''>13</td>
+<td class=''>10</td>
+<td class=''>22</td>
 <td class=''>0</td>
-<td class='cm-diagonal'>238</td>
+<td class='cm-diagonal'>229</td>
 <td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
@@ -234,13 +209,11 @@ Results include pre-trained model accuracy (full training set) and
 <td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
-<td class=''>0</td>
 <td class='cm-diagonal'>57</td>
 <td class=''>0</td>
 <td class=''>0</td>
 </tr>
 <tr><td class='cm-header'>Unmodified Cobble</td>
-<td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
@@ -258,7 +231,6 @@ Results include pre-trained model accuracy (full training set) and
 <td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
-<td class=''>0</td>
 <td class='cm-diagonal'>50</td>
 </tr>
 
@@ -267,34 +239,33 @@ Results include pre-trained model accuracy (full training set) and
 <h3>Classification Report</h3>
 <pre>                   precision    recall  f1-score   support
 
-           Biface       0.99      0.99      0.99      1018
-            Blade       0.93      0.92      0.93       401
-         Bladelet       0.98      0.98      0.98       592
-             Core       0.96      0.97      0.96       751
+           Biface       0.99      0.98      0.98      1018
+            Blade       0.99      0.96      0.97       993
+             Core       0.93      0.96      0.94       751
 Experimental Core       1.00      0.99      1.00       254
-            Flake       0.91      0.91      0.91       262
+            Flake       0.86      0.87      0.87       262
   Retouched Flake       1.00      1.00      1.00        57
 Unmodified Cobble       0.97      1.00      0.98        30
  Unmodified Flake       0.98      1.00      0.99        50
 
-         accuracy                           0.97      3415
-        macro avg       0.97      0.97      0.97      3415
-     weighted avg       0.97      0.97      0.97      3415
+         accuracy                           0.96      3415
+        macro avg       0.96      0.97      0.97      3415
+     weighted avg       0.96      0.96      0.96      3415
 </pre>
 
-<h2>Bordes Typology — 9 classes, 3415 samples</h2>
+<h2>Bordes Typology — 8 classes, 3415 samples</h2>
 <div class="summary">
 <div class="metrics">
   <div class="metric-card">
-    <div class="metric-value">96.8%</div>
+    <div class="metric-value">96.4%</div>
     <div class="metric-label">Pre-trained Accuracy</div>
   </div>
   <div class="metric-card" style="border-left: 3px solid #ffc107;">
-    <div class="metric-value">84.8% ± 0.7%</div>
+    <div class="metric-value">85.6% ± 1.1%</div>
     <div class="metric-label">Cross-Validation (5-fold)</div>
   </div>
   <div class="metric-card">
-    <div class="metric-value">9</div>
+    <div class="metric-value">8</div>
     <div class="metric-label">Classes</div>
   </div>
   <div class="metric-card">
@@ -310,33 +281,25 @@ Unmodified Cobble       0.97      1.00      0.98        30
 
 <tr>
   <td><b>Biface</b></td>
-  <td>0.985</td>
   <td>0.987</td>
-  <td style="color:green;font-weight:bold;">0.986</td>
+  <td>0.981</td>
+  <td style="color:green;font-weight:bold;">0.984</td>
   <td>1018</td>
 </tr>
 
 <tr>
   <td><b>Blade</b></td>
-  <td>0.934</td>
-  <td>0.923</td>
-  <td style="color:green;font-weight:bold;">0.928</td>
-  <td>401</td>
-</tr>
-
-<tr>
-  <td><b>Bladelet</b></td>
-  <td>0.983</td>
-  <td>0.978</td>
-  <td style="color:green;font-weight:bold;">0.981</td>
-  <td>592</td>
+  <td>0.986</td>
+  <td>0.961</td>
+  <td style="color:green;font-weight:bold;">0.973</td>
+  <td>993</td>
 </tr>
 
 <tr>
   <td><b>Core</b></td>
-  <td>0.958</td>
-  <td>0.965</td>
-  <td style="color:green;font-weight:bold;">0.962</td>
+  <td>0.928</td>
+  <td>0.960</td>
+  <td style="color:green;font-weight:bold;">0.944</td>
   <td>751</td>
 </tr>
 
@@ -350,9 +313,9 @@ Unmodified Cobble       0.97      1.00      0.98        30
 
 <tr>
   <td><b>Flake</b></td>
-  <td>0.908</td>
-  <td>0.908</td>
-  <td style="color:green;font-weight:bold;">0.908</td>
+  <td>0.858</td>
+  <td>0.874</td>
+  <td style="color:green;font-weight:bold;">0.866</td>
   <td>262</td>
 </tr>
 
@@ -387,7 +350,6 @@ Unmodified Cobble       0.97      1.00      0.98        30
 <tr><td class="cm-header">True \ Pred</td>
 <td class='cm-header'>Biface</td>
 <td class='cm-header'>Blade</td>
-<td class='cm-header'>Bladelet</td>
 <td class='cm-header'>Core</td>
 <td class='cm-header'>Experimental Core</td>
 <td class='cm-header'>Flake</td>
@@ -396,10 +358,9 @@ Unmodified Cobble       0.97      1.00      0.98        30
 <td class='cm-header'>Unmodified Flake</td>
 </tr>
 <tr><td class='cm-header'>Biface</td>
-<td class='cm-diagonal'>1005</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>13</td>
+<td class='cm-diagonal'>999</td>
+<td class=''>1</td>
+<td class=''>18</td>
 <td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
@@ -408,39 +369,25 @@ Unmodified Cobble       0.97      1.00      0.98        30
 </tr>
 <tr><td class='cm-header'>Blade</td>
 <td class=''>3</td>
-<td class='cm-diagonal'>370</td>
-<td class=''>9</td>
-<td class=''>6</td>
+<td class='cm-diagonal'>954</td>
+<td class=''>16</td>
 <td class=''>0</td>
-<td class=''>13</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
-</tr>
-<tr><td class='cm-header'>Bladelet</td>
-<td class=''>0</td>
-<td class=''>13</td>
-<td class='cm-diagonal'>579</td>
-<td class=''>0</td>
-<td class=''>0</td>
-<td class=''>0</td>
+<td class=''>20</td>
 <td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
 </tr>
 <tr><td class='cm-header'>Core</td>
-<td class=''>11</td>
-<td class=''>4</td>
+<td class=''>9</td>
+<td class=''>3</td>
+<td class='cm-diagonal'>721</td>
 <td class=''>0</td>
-<td class='cm-diagonal'>725</td>
-<td class=''>0</td>
-<td class=''>11</td>
+<td class=''>18</td>
 <td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
 </tr>
 <tr><td class='cm-header'>Experimental Core</td>
-<td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
@@ -452,11 +399,10 @@ Unmodified Cobble       0.97      1.00      0.98        30
 </tr>
 <tr><td class='cm-header'>Flake</td>
 <td class=''>1</td>
-<td class=''>9</td>
-<td class=''>1</td>
-<td class=''>13</td>
+<td class=''>10</td>
+<td class=''>22</td>
 <td class=''>0</td>
-<td class='cm-diagonal'>238</td>
+<td class='cm-diagonal'>229</td>
 <td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
@@ -467,13 +413,11 @@ Unmodified Cobble       0.97      1.00      0.98        30
 <td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
-<td class=''>0</td>
 <td class='cm-diagonal'>57</td>
 <td class=''>0</td>
 <td class=''>0</td>
 </tr>
 <tr><td class='cm-header'>Unmodified Cobble</td>
-<td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
@@ -491,7 +435,6 @@ Unmodified Cobble       0.97      1.00      0.98        30
 <td class=''>0</td>
 <td class=''>0</td>
 <td class=''>0</td>
-<td class=''>0</td>
 <td class='cm-diagonal'>50</td>
 </tr>
 
@@ -500,19 +443,18 @@ Unmodified Cobble       0.97      1.00      0.98        30
 <h3>Classification Report</h3>
 <pre>                   precision    recall  f1-score   support
 
-           Biface       0.99      0.99      0.99      1018
-            Blade       0.93      0.92      0.93       401
-         Bladelet       0.98      0.98      0.98       592
-             Core       0.96      0.97      0.96       751
+           Biface       0.99      0.98      0.98      1018
+            Blade       0.99      0.96      0.97       993
+             Core       0.93      0.96      0.94       751
 Experimental Core       1.00      0.99      1.00       254
-            Flake       0.91      0.91      0.91       262
+            Flake       0.86      0.87      0.87       262
   Retouched Flake       1.00      1.00      1.00        57
 Unmodified Cobble       0.97      1.00      0.98        30
  Unmodified Flake       0.98      1.00      0.99        50
 
-         accuracy                           0.97      3415
-        macro avg       0.97      0.97      0.97      3415
-     weighted avg       0.97      0.97      0.97      3415
+         accuracy                           0.96      3415
+        macro avg       0.96      0.97      0.97      3415
+     weighted avg       0.96      0.96      0.96      3415
 </pre>
 
 <h2>Technological — 8 classes, 3415 samples</h2>

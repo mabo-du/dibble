@@ -120,22 +120,19 @@ def get_labels(rows: list[dict], system: str, lookup: dict) -> list[str]:
         blank_val = meta.get("Blank", "").strip()
 
         if system == "basic":
+            # Bladelet merged into Blade (see retrain.py for rationale)
             if cls_val in ("Core", "Core-Tool"):
                 labels.append("Core")
             elif cls_val == "Tool":
-                if blank_val == "Blade":
+                if blank_val in ("Blade", "Bladelet"):
                     labels.append("Blade")
-                elif blank_val == "Bladelet":
-                    labels.append("Bladelet")
                 elif blank_val == "Flake":
                     labels.append("Flake")
                 else:
                     # Merge generic "Tool" into Retouched Flake (4 samples not viable)
                     labels.append("Retouched Flake")
-            elif blank_val == "Blade":
+            elif blank_val in ("Blade", "Bladelet"):
                 labels.append("Blade")
-            elif blank_val == "Bladelet":
-                labels.append("Bladelet")
             elif blank_val == "Flake":
                 labels.append("Flake")
             elif csv_typology and system == "basic":
@@ -158,12 +155,11 @@ def get_labels(rows: list[dict], system: str, lookup: dict) -> list[str]:
                 labels.append("Unknown")
 
         elif system == "bordes":
+            # Bladelet merged into Blade (see retrain.py for rationale)
             if cls_val in ("Core", "Core-Tool"):
                 labels.append("Core")
-            elif blank_val == "Blade":
+            elif blank_val in ("Blade", "Bladelet"):
                 labels.append("Blade")
-            elif blank_val == "Bladelet":
-                labels.append("Bladelet")
             elif blank_val == "Flake":
                 labels.append("Flake")
             elif cls_val == "Tool":
