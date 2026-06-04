@@ -1,183 +1,185 @@
-# Dibble
+<div align="center">
 
-<p align="center">
-  <b>Digital Image-Based Benchmark for Lithic Evaluation</b><br>
-  <i>End-to-end 3D lithic analysis — from photos to classified artefact, fully offline.</i>
-</p>
+# ⛏ Dibble
 
-<p align="center">
-  <img src="https://img.shields.io/badge/python-3.11%2B-blue" alt="Python 3.11+">
-  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
-  <img src="https://img.shields.io/badge/platform-linux%20%7C%20macOS%20%7C%20windows-lightgrey" alt="Platform">
-  <img src="https://img.shields.io/badge/GPU-none%20required-brightgreen" alt="No GPU required">
-  <img src="https://img.shields.io/badge/CLI-%E2%9C%94-blueviolet" alt="CLI">
-  <img src="https://img.shields.io/badge/GUI-%E2%9C%94-orange" alt="GUI">
-  <img src="https://img.shields.io/badge/status-beta-yellow" alt="Status: Beta">
-</p>
+**Digital Image-Based Benchmark for Lithic Evaluation**
 
-> **Status: Beta** — Dibble is an open-source research tool in active development.
-> The classifier achieves ~85% cross-validation accuracy on European Upper Paleolithic
-> assemblages but performs poorly on under-represented classes and non-European
-> assemblages. See [Known Limitations](#known-limitations) before using in published research.
+*End-to-end 3D lithic analysis — from photos to classified artefact, fully offline.*
 
----
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue?style=flat-square&logo=python&logoColor=white)]()
+[![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)]()
+[![Platform](https://img.shields.io/badge/platform-linux%20|%20macOS%20|%20win-lightgrey?style=flat-square)]()
+[![No GPU required](https://img.shields.io/badge/GPU-none%20required-brightgreen?style=flat-square)]()
+[![CLI](https://img.shields.io/badge/CLI-%E2%9C%94-blueviolet?style=flat-square)]()
+[![GUI](https://img.shields.io/badge/GUI-%E2%9C%94-orange?style=flat-square)]()
+[![Status: Beta](https://img.shields.io/badge/status-beta-yellow?style=flat-square)]()
+[![Benchmark: 86.1% CV](https://img.shields.io/badge/benchmark-86.1%25%20CV-4472C4?style=flat-square)]()
 
-## Overview
-
-Dibble is a desktop application for **automated 3D lithic (stone tool) analysis**.
-Import a 3D mesh — or a folder of photos for photogrammetric reconstruction — and
-Dibble orients it, extracts standardised measurements, detects flake scars,
-identifies typology, and lets you annotate, compare, and query your collection
-in natural language. Everything runs locally. No GPU required. No cloud dependency.
-
-Dibble is named for **[Harold Dibble](https://en.wikipedia.org/wiki/Harold_Dibble)**
-(1951–2018), pioneering lithic technologist and open-source advocate.
+> **Status: Beta** — An open-source research tool in active development.
+> Named for **[Harold Dibble](https://en.wikipedia.org/wiki/Harold_Dibble)** (1951–2018),
+> pioneering lithic technologist and open-source advocate.
 
 ---
 
-## Known Limitations
+https://github.com/user-attachments/assets/placeholder
 
-Dibble is an **open-source research tool** (v0.4.0-beta), not a production-grade
-commercial product. Before using the classifier in published research, please
-understand these limitations.
+</div>
 
-### Class imbalance (3,415 total samples)
-The classifier performs well on classes with hundreds of samples but is
-**unreliable on rare ones**:
+## 🔍 What is Dibble?
 
+Dibble transforms 3D scans of stone tools into **standardised morphometric measurements**, **typological classifications**, and **publication-ready figures** — all on your own machine, no GPU required, no data sent to the cloud.
+
+**A single command takes you from mesh to analysis:**
+
+```bash
+# Batch process a folder of 3D scans
+lithicore batch ./excavation_meshes/ --output classified.csv
+
+# Launch the desktop GUI
+lithicope
+```
+
+### At a glance
+
+| Capability | What it does |
+|-----------|--------------|
+| **📐 3D processing** | Import PLY/OBJ/STL → auto-orient → extract 22 morphometric measurements → detect flake scars → compute platform angles |
+| **🧠 AI classification** | Predict typology (Basic/Bordes/Technological) with **86.1% CV accuracy** on European Upper Palaeolithic assemblages. Explainable predictions with per-feature breakdowns. |
+| **📷 Photogrammetry** | 9-stage COLMAP pipeline: raw photos → cleaned 3D mesh → PLY output. Three-tier interface from one-click to full expert control. |
+| **📊 Publication figures** | Standardised three-view technical drawings (plan, profile, section) with scale bars and measurement callouts. Exported as SVG via VTK GL2PS. |
+| **🏷 3D annotation** | Pin notes, measurements, and screenshots to any point on the mesh surface. Export/import for collaboration. |
+| **💬 AI Assistant** | Query your collection in natural language via a local LLM. Fully offline — no data ever leaves your machine. |
+| **🧪 Training pipeline** | Retrain classifiers on your own data. Add new typologies. Export to ONNX for deployment. |
+
+---
+
+## ⚠️ Known Limitations
+
+Dibble is a **research tool (v0.4.0-beta)**, not a commercial product. Please read these before using the classifier in published research.
+
+### Geographic bias
+~70% of training data comes from **Italian Aurignacian sites** (Fumane, Castelcivita, Cala, Bombrini). The combined model achieves **86.1% 5-fold CV** on this data but performs **significantly worse on non-European assemblages**. We now provide **tradition-specific models** (OAP, COADS, Levantine, Experimental) — select the appropriate tradition from the GUI dropdown to get honest, per-tradition accuracy.
+
+### Class imbalance
 | Class | Samples | Reliability |
 |-------|---------|-------------|
 | Biface | 1,018 | Good |
+| Blade | 993 | Good |
 | Core | 751 | Good |
-| Bladelet | 592 | Good |
-| Blade | 401 | Moderate |
 | Flake | 262 | Moderate |
 | Experimental Core | 254 | Moderate |
-| Retouched Flake | 57 | **Low — predictions need expert verification** |
-| Unmodified Flake | 50 | **Low — may misclassify** |
-| Unmodified Cobble | 30 | **Low — may misclassify** |
+| Retouched Flake | 57 | Low — verify |
+| Unmodified Flake | 50 | Low — verify |
+| Unmodified Cobble | 30 | Low — verify |
 
-### Geographic bias
-~70% of training data comes from Italian Aurignacian sites (Fumane, Castelcivita,
-Cala, Bombrini). The classifier will be **less accurate on non-European assemblages**
-and time periods not represented in the training corpus.
-
-### Feature limitation
-One of the 22 morphometric features (`edge_angle_std_deg`) was computed as zero
-for the full training corpus due to an earlier pipeline bug. It has been patched
-for 89% of rows, but 11% remain zero (meshes not available on disk for reprocessing).
-
-### Cross-validation vs reality
-The reported CV accuracy is a **best-case estimate** from 5-fold cross-validation.
-Real-world accuracy on independently collected assemblages will likely be lower.
-
-### Recommendations
-- Retrain the classifier on your own assemblage before relying on predictions
-- Treat predictions on rare classes as **suggestions requiring expert verification**
-- Run `lithicore benchmark` on your retrained model to assess actual performance
-- Use the explainable predictions panel to review which features drove each decision
+### Recommendations for publication
+1. **Retrain on your own assemblage** before relying on predictions
+2. **Use tradition-specific models** via the GUI dropdown for non-OAP assemblages
+3. **Treat low-confidence predictions** (<0.6) as suggestions requiring expert verification
+4. **Run `lithicore benchmark`** after retraining to assess real performance
+5. **Review the feature breakdown** panel to understand each decision
 
 ---
 
-## Features
+## ✨ Features
 
 ### 📐 3D Mesh Processing
-
-| Feature | Details |
-|---|---|
-| **Import** | PLY, OBJ, STL — single file or batch directory |
-| **Auto-orientation** | PCA-based alignment with platform detection. Or manually orient by clicking three points. |
-| **Mesh validation** | Detects non-manifold geometry, inverted normals, degenerate faces, isolated components. Auto-repair option. |
-| **Measurement** | Max length, width, thickness, surface area, and volume. All measurements in mm/mm²/mm³ in oriented coordinate space. |
-| **Platform angles** | Exterior platform angle (EPA) and interior platform angle (IPA) extracted automatically. |
-| **Edge detection** | Configurable dihedral angle thresholding for identifying retouched edges and ridges. |
-| **Batch processing** | Process entire directories of meshes with a single command. Exports CSV, JSON, or PDF. |
+- **Import formats:** PLY, OBJ, STL (single file or batch directory)
+- **Auto-orientation:** PCA-based alignment with platform detection + manual fallback
+- **Mesh validation:** Detects non-manifold geometry, inverted normals, degenerate faces, isolated components — with auto-repair
+- **Measurement suite:** Length, width, thickness, surface area, volume, elongation, flatness, compactness; platform angles (EPA/IPA); edge angle statistics (mean, std, skewness, kurtosis); curvature index; cross-section profile; symmetry score; dorsal ridge count; surface roughness
+- **Edge detection:** Configurable dihedral angle thresholding for retouched edges and ridges
+- **Batch processing:** Entire directories → CSV/JSON export
 
 ### 🔬 Advanced Analysis
-
-| Feature | Details |
-|---|---|
-| **3D viewer** | Interactive PyVista/VTK viewport with rotate, zoom, pan. Embedded directly in the GUI — not screenshot-based. |
-| **Publication figures** | Generate standardised three-view technical drawings (plan, profile, section) with scale bar, artefact ID, and measurement callouts. Exported as SVG via VTK GL2PS. |
-| **Mesh comparison** | Overlay two meshes, adjust opacity, compare 9 difference metrics including Hausdorff distance, volume difference, centroid distance, and L/W/T deltas. |
-| **3D landmarks** | Click-to-place anatomical landmarks on the mesh with scheme-guided naming (13-point flake, 16-point biface). Export to MorphoJ format for geometric morphometrics. |
-| **Flake scar detection** | Automated scar segmentation via Shape Index curvature analysis and watershed algorithm. Each scar is labelled with its area and position. |
-
-### 📷 Photogrammetry Pipeline
-
-| Feature | Details |
-|---|---|
-| **Photos to mesh** | Full 9-stage COLMAP pipeline: feature extraction → matching → sparse reconstruction → dense MVS → fusion → cleaning → meshing → decimation → output. |
-| **Three-tier interface** | Default (one-click), Guided (settings), Expert (full COLMAP control with GPU toggle and dense quality settings). |
-| **Point cloud cleaning** | Statistical outlier removal with spatial-spread floor plus automatic background cropping via PCA bounding box. |
-| **Scale detection** | Automatic detection via ArUco markers (±0.1% accuracy) or ruler/scale bar analysis via Hough lines + tick mark frequency. Manual mode: click two points, enter known distance. |
-| **Photo pre-processing** | Blur detection (Laplacian variance filters out motion-blurred images), CLAHE exposure normalisation for consistent lighting across photo sets, and automatic image resizing. |
-| **Batch queue** | Process multiple artefacts sequentially with live progress tracking and per-artefact preview. |
-
-### 🏷 3D Annotation
-
-| Feature | Details |
-|---|---|
-| **Pin annotations** | Attach rich notes to any point on the mesh surface — title, description, category, measurement, confidence. |
-| **Three display modes** | Pin+Label (always visible), Pin Only (appear on hover), or Numbered markers with legend. |
-| **Photo capture** | Take a screenshot of the current 3D view and attach it directly to any annotation. |
-| **Collaboration** | Export annotations as JSON. Colleagues import on their machine — Dibble merges intelligently, detecting conflicts by 3D position. |
+- **Interactive 3D viewer** — PyVista/VTK with rotate, zoom, pan, and four display modes (solid, wireframe, translucent, points)
+- **Diagnostic overlays** — Viewer highlights dorsal ridges (blue), platform (green), and retouched edges (red)
+- **Publication figures** — Three-view drawings (plan, profile, section) with scale bar and measurements. SVG via VTK GL2PS.
+- **Mesh comparison** — Overlay two meshes with adjustable opacity, compare 9 difference metrics
+- **3D landmarks** — Click-to-place anatomical landmarks (13-point flake, 16-point biface). Export to MorphoJ format.
+- **Flake scar detection** — Automated segmentation via Shape Index curvature + watershed algorithm
 
 ### 🤖 AI Lithic Classification
+Dibble's classifier extracts a **47-dimensional feature vector** from every mesh (22 core morphometrics + 10 interaction features + 15 topological PH features):
 
-| Feature | Details |
-|---|---|
-| **Morphometric fingerprint** | 22-dimensional feature vector extracted from every mesh: length, width, thickness, elongation, flatness, scar count, platform angle, edge angle statistics (mean, std, skewness, kurtosis), curvature, cross-section profile, symmetry, dorsal ridge count, and surface roughness. |
-| **Three pre-trained typologies** | **Basic** (8 classes: Biface, Blade, Bladelet, Core, Flake, Retouched Flake, Tool, Unmodified Flake — 80.7% 5-fold CV), **Bordes** (same morphology-based mapping — 80.7% CV), **Technological** (7 reduction stages — 65.3% CV). |
-| **Explainable predictions** | Every prediction includes a per-feature breakdown showing which measurements drove the decision and whether each falls within the expected range for the predicted type. |
-| **Diagnostic viewer overlays** | The 3D viewer highlights dorsal ridges (blue), platform (green), and retouched edges (red) — the physical features that the classifier used. |
-| **Active learning** | Every time you correct a prediction, it queues for retraining. After 10 corrections, the model retrains automatically on 3,028 baseline artefacts plus your corrections. |
-| **Custom typologies** | Define your own typology system and train a classifier on your own types. Save the model to share with colleagues. |
-| **Self-validation** | Run `lithicore benchmark` to generate an interactive HTML report with confusion matrices, per-class precision/recall/F1, and accuracy scores. Reproducible on any machine. |
+| Feature group | Examples |
+|--------------|----------|
+| **Size & shape** | Length, width, thickness, area, volume, elongation, flatness, compactness |
+| **Angles** | Platform angle (EPA/IPA), edge angle statistics (mean, std, skewness, kurtosis) |
+| **Surface** | Scar count, curvature index, cross-section profile, symmetry, dorsal ridge count, roughness |
+| **Topological (PH)** | Multi-scale surface texture via Alpha complex persistent homology (15 PCA components) |
+
+**Three pre-trained typologies:**
+
+| Typology | Classes | CV Accuracy |
+|----------|---------|-------------|
+| Basic | 8 | **86.1%** |
+| Bordes | 8 | **86.1%** |
+| Technological | 8 | **75.3%** |
+
+**Tradition-aware classification:** Select from OAP (Europe), COADS (Ohio), Levantine, or Experimental in the GUI — the model dispatches to a tradition-specific classifier that only predicts classes present in that tradition.
+
+**Explainable predictions:** Every prediction comes with a per-feature breakdown — which measurements drove the decision, their values, and whether each falls in the expected range for the predicted type.
+
+**Active learning:** Correct a prediction → the sample queues for retraining. After 10 corrections, the model retrains automatically on baseline data plus your corrections.
+
+**Custom typologies:** Define your own classification system, train on your labelled meshes, save the model to share with colleagues.
+
+### 📷 Photogrammetry Pipeline
+- **9-stage COLMAP pipeline:** Feature extraction → matching → sparse reconstruction → dense MVS → fusion → cleaning → meshing → decimation → output
+- **Three-tier interface:** Default (one-click), Guided (quality/speed settings), Expert (full COLMAP control)
+- **Photo pre-processing:** Blur detection (Laplacian variance), CLAHE exposure normalisation, auto-resize
+- **Scale detection:** ArUco markers (±0.1%), ruler/scale bar (±1%), or manual
+- **Batch queue:** Process multiple artefacts sequentially with progress tracking
+
+### 🏷 3D Annotation
+- Pin notes, measurements, and screenshots to any mesh surface point
+- Three display modes: Pin+Label, Pin Only, Numbered with legend
+- Export/import for collaboration (intelligent merge by 3D position)
 
 ### 💬 AI Lithic Assistant
-
-| Feature | Details |
-|---|---|
-| **Natural language queries** | Ask questions about your collection in plain English: *"Show me all crested blades with platform angles over 75°"* or *"What's the average length of scrapers?"* |
-| **Local LLM** | Powered by Qwen3-4B running locally via llama.cpp. Fully offline — no data ever leaves your machine. |
-| **SQL generation** | The assistant translates your question into SQL, executes it against the in-memory collection via DuckDB, and explains the results. Toggle "Show SQL" to see and verify the generated query. |
-| **Self-correcting** | If the generated SQL fails, the assistant automatically fixes it and retries (up to 3 attempts). |
-
-*The AI Assistant is optional. Install with `pip install llama-cpp-python`. Model downloads automatically on first use (~2.5 GB).*
+- Ask questions in plain English: *"Show me crested blades with platform angles over 75°"*
+- Local Qwen3-4B LLM via llama.cpp — fully offline, no data ever leaves your machine
+- Translates questions to SQL → queries in-memory DuckDB → explains results
+- Self-correcting (up to 3 retries on SQL failure)
+- *Optional:* `pip install llama-cpp-python` (~2.5 GB model downloads on first use)
 
 ---
 
-## Quick start
+## 🚀 Quick Start
 
 ```bash
-# Install
-pip install lithicore lithicope
+# 1. Install from source
+git clone https://github.com/mabo-du/dibble.git
+cd dibble
+pip install -e lithicore      # Core library
+pip install -e lithicope       # GUI (optional)
 
-# CLI — batch process a folder of meshes
+# 2. Verify
+lithicore --help
+lithicore benchmark            # Validation report → browser
+
+# 3. Process meshes
 lithicore batch ./meshes/ --output results.csv
-
-# CLI — generate a publication figure
 lithicore figure artefact.ply --output figure.svg --label "FLK-145"
 
-# CLI — validate classifier accuracy
-lithicore benchmark
-
-# GUI — launch the desktop application
+# 4. Launch GUI
 lithicope
 ```
 
 ---
 
-## Architecture
+## 🏛 Architecture
 
 ```
 lithicore/                          # Core library (pure Python, no GUI)
 ├── src/lithicore/
 │   ├── _models.py                  # All shared data types
+│   ├── _classification.py          # 47-dim feature extraction + classifier
+│   ├── _ph_features.py             # Persistent Homology (Alpha complex)
 │   ├── _validation.py              # Mesh validation + repair
 │   ├── _orientation.py             # PCA + manual orientation
-│   ├── _metrics.py                 # Length, width, thickness, area, volume
+│   ├── _metrics.py                 # Length, width, thickness, etc.
 │   ├── _edge_detection.py          # Dihedral angle edge detection
 │   ├── _platform_angle.py          # EPA, IPA extraction
 │   ├── _comparison.py              # Mesh comparison metrics
@@ -190,93 +192,86 @@ lithicore/                          # Core library (pure Python, no GUI)
 │   ├── _scale_detection.py         # ArUco + ruler detection
 │   ├── _photo_preprocessing.py     # Blur + exposure correction
 │   ├── _annotations.py             # Annotation data model
-│   ├── _classification.py          # Feature extraction + classifier
 │   └── _assistant.py               # AI Lithic Assistant
 ├── data/
 │   ├── models/                     # Pre-trained classifiers (.joblib)
-│   ├── grammars/                   # GBNF grammar for SQL generation
 │   ├── training/
-│   │   ├── download_and_process.py # Dataset download + feature extraction
-│   │   ├── _worker.py              # Per-mesh subprocess worker (OOM-safe)
-│   │   ├── process_safe.py         # Memory-safe batch processing pipeline
-│   │   ├── retrain.py              # Retrain all classifiers from matrix
-│   │   ├── download_coads.py       # COADS batch downloader (Zenodo API)
-│   │   ├── validate_pipeline.py    # Photo-to-mesh pipeline validator
-│   │   └── processed/              # Generated training_matrix.csv
-│   ├── generate_training_data.py   # Legacy synthetic data generator
+│   │   ├── retrain.py              # Retrain all classifiers
+│   │   ├── batch_ph.py             # Batch PH feature computation
+│   │   └── processed/              # training_matrix.csv
 │   └── run_benchmark.py            # CLI benchmark entry point
 
 lithicope/                          # Desktop GUI (PyQt6 + PyVista)
 └── src/lithicope/
     ├── main.py                     # Entry point
-    ├── _main_window.py             # Main window with tabbed interface
+    ├── _main_window.py             # Tabbed main window
     ├── _viewer_3d.py               # 3D viewport (PyVista)
-    ├── _import_dialog.py           # Import configuration
+    ├── _classification_panel.py    # Classification + tradition selector
+    ├── _annotation_panel.py        # Annotation management
+    ├── _assistant_panel.py         # AI Assistant chat interface
+    ├── _photogrammetry_dialog.py   # 3-mode photogrammetry
     ├── _results_panel.py           # Measurement display
     ├── _batch_runner.py            # Threaded batch processing
-    ├── _batch_photogrammetry.py    # Batch photogrammetry queue
-    ├── _photogrammetry_dialog.py   # 3-mode photogrammetry UI
-    ├── _annotation_panel.py        # Annotation management
-    ├── _classification_panel.py    # Classification + active learning
-    └── _assistant_panel.py         # AI Assistant chat interface
+    └── _import_dialog.py           # Import configuration
 ```
 
 ---
 
-## Requirements
+## 📊 Training Data
+
+Trained on **3,415 real-world 3D scans** from five assemblages across three continents:
+
+| Source | Origin | Artefacts | Scanner | Years represented |
+|--------|--------|-----------|---------|-------------------|
+| Open Aurignacian Project | Italy | 2,010 | Artec Space Spider / micro-CT | ~42,000–33,000 BP |
+| Levantine Acheulean Handaxes | Israel/Palestine | 526 | Structured light | ~1.4M–200,000 BP |
+| COADS Projectile Points | Ohio, USA | 492 | Structured light | ~3,000–1,000 BP |
+| Lombao Experimental Cores | Spain | 284 | Structured light | Modern (controlled) |
+| Morales Experimental Retouch | Spain | 100 | Structured light | Modern (controlled) |
+
+---
+
+## 📋 Requirements
 
 | Dependency | Version | Purpose |
-|---|---|---|
+|-----------|---------|---------|
 | Python | 3.11+ (3.13 supported) | Runtime |
 | PyQt6 | ≥6.5 | GUI framework |
-| PyVista / VTK | ≥0.42 | 3D rendering and figure export |
-| trimesh | ≥4.0 | Mesh processing and measurements |
+| PyVista / VTK | ≥0.42 | 3D rendering + figure export |
+| trimesh | ≥4.0 | Mesh processing |
 | NumPy / SciPy | ≥1.24 / ≥1.11 | Numerical computing |
-| opencv-python | ≥4.7 | Photo pre-processing and ArUco detection |
-| scikit-learn / joblib | ≥1.3 / ≥1.2 | Classifier training and prediction |
-| pandas / ReportLab | ≥2.0 | CSV, JSON, PDF export |
-| DuckDB | ≥1.0 | In-memory SQL queries (AI Assistant) |
-| **llama-cpp-python** | *optional* | Local LLM inference (AI Assistant) |
-| **COLMAP** | *separate install* | Photogrammetry reconstruction |
+| scikit-learn / joblib | ≥1.3 / ≥1.2 | Classifier training |
+| opencv-python | ≥4.7 | Photo pre-processing + ArUco |
+| GUDHI | ≥3.12 | Persistent Homology (PH features) |
+| umap-learn / hdbscan | optional | Morphospace diagnostics |
+| **llama-cpp-python** | *optional* | Local LLM (AI Assistant) |
+| **COLMAP** | *separate install* | Photogrammetry |
 
 ---
 
-## Classifier Validation
+## 📖 Documentation
 
-The classifiers are trained on **3,415 real-world 3D scan meshes** from three continents:
-
-| Data Source | Origin | Artefacts | Scanner |
-|---|---|---|---|
-| Open Aurignacian Project (Vols 1-4) + Broglio, Castelcivita, Cala | Italy | 2,418 | Artec Space Spider / Micro / micro-CT |
-| Levantine Acheulean Handaxes | Israel / Palestine | 526 | Structured light |
-| COADS (Central Ohio Arch. Digitization Survey) | Ohio, USA | 514 | Structured light |
-| Lombao Experimental Cores | Spain | 254 | Structured light |
-| Morales Experimental Retouch | Spain | 100 | Structured light |
-
-| Typology | Classes | 5-Fold CV Accuracy | Training Accuracy |
-|---|---|---|---|---|
-| Basic Morphological | Biface, Blade, Bladelet, Core, Experimental Core, Flake, Retouched Flake, Unmodified Cobble, Unmodified Flake | **84.8%** | 96.8% |
-| Bordes Typology | Same morphology-based mapping | **84.8%** | 96.8% |
-| Technological | Handaxe, Initialization, Maintenance, Optimal, Other, Semi-cortical, Undetermined, Unknown | **73.6%** | 92.3% |
-
-*Results are 5-fold cross-validation on real archaeological and experimental meshes.
-Run `lithicore benchmark` to generate a full interactive HTML report with confusion
-matrices, per-class precision/recall/F1 scores, and cross-validation accuracy.*
+- **[User Guide](docs/User_Guide.md)** — Full documentation: installation, GUI, CLI, training pipeline
+- **[Research Papers](docs/research-papers/)** — Deep Research papers on accuracy enhancement, PH, and typology
+- **[Research Prompts](docs/research-prompts/)** — Prompts used for Deep Research investigations
 
 ---
 
-## Citation
+## 📝 Citation
 
-If you use Dibble in published research, please cite the software:
-
-```
-Bouck, M. (2026). Dibble: Digital Image-Based Benchmark for Lithic Evaluation
-(Version 0.4.0-beta) [Computer software]. https://github.com/mabo-du/dibble
+```bibtex
+@software{bouck2026dibble,
+  author    = {Bouck, M.},
+  title     = {Dibble: Digital Image-Based Benchmark for Lithic Evaluation},
+  year      = {2026},
+  version   = {0.4.0-beta},
+  url       = {https://github.com/mabo-du/dibble},
+}
 ```
 
 ---
 
-## License
+## 📜 License
 
 MIT License. See `LICENSE` for details.
 
