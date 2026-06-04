@@ -1,53 +1,53 @@
 {
-  "accuracy": 0.9268,
+  "accuracy": 0.9353,
   "per_class": [
     {
       "class": "Handaxe",
-      "precision": 0.984,
-      "recall": 0.987,
-      "f1": 0.986,
+      "precision": 0.979,
+      "recall": 0.992,
+      "f1": 0.985,
       "support": 1018
     },
     {
       "class": "Initialization",
-      "precision": 1.0,
-      "recall": 0.816,
-      "f1": 0.899,
+      "precision": 0.985,
+      "recall": 0.842,
+      "f1": 0.908,
       "support": 76
     },
     {
       "class": "Maintenance",
-      "precision": 0.889,
-      "recall": 0.904,
-      "f1": 0.896,
+      "precision": 0.913,
+      "recall": 0.916,
+      "f1": 0.915,
       "support": 311
     },
     {
       "class": "Optimal",
-      "precision": 0.895,
+      "precision": 0.904,
       "recall": 0.966,
-      "f1": 0.929,
+      "f1": 0.934,
       "support": 854
     },
     {
       "class": "Other",
-      "precision": 0.829,
+      "precision": 0.856,
       "recall": 0.982,
-      "f1": 0.899,
+      "f1": 0.915,
       "support": 503
     },
     {
       "class": "Semi-cortical",
       "precision": 1.0,
-      "recall": 0.37,
-      "f1": 0.54,
+      "recall": 0.45,
+      "f1": 0.62,
       "support": 238
     },
     {
       "class": "Undetermined",
       "precision": 1.0,
-      "recall": 0.929,
-      "f1": 0.963,
+      "recall": 0.893,
+      "f1": 0.943,
       "support": 28
     },
     {
@@ -60,21 +60,21 @@
   ],
   "confusion_matrix": [
     [
-      1005,
+      1010,
       0,
-      2,
+      1,
       0,
-      11,
+      7,
       0,
       0,
       0
     ],
     [
       0,
-      62,
-      4,
-      6,
-      4,
+      64,
+      2,
+      7,
+      3,
       0,
       0,
       0
@@ -82,19 +82,19 @@
     [
       1,
       0,
-      281,
-      26,
-      3,
+      285,
+      24,
+      1,
       0,
       0,
       0
     ],
     [
-      2,
+      3,
       0,
-      8,
+      10,
       825,
-      19,
+      16,
       0,
       0,
       0
@@ -110,23 +110,13 @@
       0
     ],
     [
-      6,
-      0,
-      19,
-      62,
-      63,
-      88,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0,
+      10,
       1,
-      1,
+      12,
+      54,
+      54,
+      107,
       0,
-      26,
       0
     ],
     [
@@ -134,6 +124,16 @@
       0,
       0,
       2,
+      1,
+      0,
+      25,
+      0
+    ],
+    [
+      1,
+      0,
+      0,
+      1,
       1,
       0,
       0,
@@ -152,7 +152,7 @@
   ],
   "n_samples": 3415,
   "n_classes": 8,
-  "classification_report": "                precision    recall  f1-score   support\n\n       Handaxe       0.98      0.99      0.99      1018\nInitialization       1.00      0.82      0.90        76\n   Maintenance       0.89      0.90      0.90       311\n       Optimal       0.89      0.97      0.93       854\n         Other       0.83      0.98      0.90       503\n Semi-cortical       1.00      0.37      0.54       238\n  Undetermined       1.00      0.93      0.96        28\n       Unknown       1.00      0.99      1.00       387\n\n      accuracy                           0.93      3415\n     macro avg       0.95      0.87      0.89      3415\n  weighted avg       0.93      0.93      0.92      3415\n",
+  "classification_report": "                precision    recall  f1-score   support\n\n       Handaxe       0.98      0.99      0.99      1018\nInitialization       0.98      0.84      0.91        76\n   Maintenance       0.91      0.92      0.91       311\n       Optimal       0.90      0.97      0.93       854\n         Other       0.86      0.98      0.91       503\n Semi-cortical       1.00      0.45      0.62       238\n  Undetermined       1.00      0.89      0.94        28\n       Unknown       1.00      0.99      1.00       387\n\n      accuracy                           0.94      3415\n     macro avg       0.95      0.88      0.90      3415\n  weighted avg       0.94      0.94      0.93      3415\n",
   "name": "technological",
   "display_name": "Technological",
   "n_features": 47

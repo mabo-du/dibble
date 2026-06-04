@@ -37,6 +37,13 @@ def find_mesh(aid: str, raw_dir: Path) -> Path | None:
         p = raw_dir / "morales_retouch" / f"{suffix}.stl"
         if p.exists(): return p
 
+    # COADS PLY files (stored as {hash}.ply without COADS_ prefix)
+    if aid.startswith("COADS_"):
+        suffix = aid.replace("COADS_", "")
+        for sub in ["ply", "glb"]:
+            p = raw_dir / "COADS" / sub / f"{suffix}.{sub}"
+            if p.exists(): return p
+
     # EdgeAngle corpus
     if aid.startswith("EAP") or aid.startswith("BU-") or aid.startswith("WEM-"):
         for fmt in ["stl", "ply"]:

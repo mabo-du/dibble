@@ -34,6 +34,14 @@ from lithicore import (
     extract_diagnostic_coordinates,
 )
 
+TRADITION_ITEMS: list[tuple[str, str | None]] = [
+    ("Auto", None),
+    ("OAP (Europe)", "OAP"),
+    ("COADS (Ohio)", "COADS"),
+    ("Levantine (Israel)", "Levantine"),
+    ("Experimental (Cores)", "Experimental"),
+]
+
 
 class ClassificationPanel(QWidget):
     """Panel for running and displaying lithic typology classification."""
@@ -47,6 +55,7 @@ class ClassificationPanel(QWidget):
         self._current_result: Optional[ClassificationResult] = None
         self._current_mesh = None
         self._models: dict[str, ClassifierModel] = {}
+        self._tradition_models: dict[str, ClassifierModel] = {}
         self._correction_timer = QTimer()
         self._correction_timer.setInterval(500)
         self._correction_timer.setSingleShot(True)
@@ -74,6 +83,17 @@ class ClassificationPanel(QWidget):
         type_row.addWidget(self._typology_combo)
         type_row.addStretch()
         layout.addLayout(type_row)
+
+        # Tradition selector
+        trad_row = QHBoxLayout()
+        trad_row.addWidget(QLabel("Tradition:"))
+        self._tradition_combo = QComboBox()
+        for display, _data in TRADITION_ITEMS:
+            self._tradition_combo.addItem(display)
+        self._tradition_combo.currentTextChanged.connect(self._on_tradition_changed)
+        trad_row.addWidget(self._tradition_combo)
+        trad_row.addStretch()
+        layout.addLayout(trad_row)
 
         # Auto-classify toggle
         self._auto_check = QCheckBox("Auto-classify on load")
@@ -140,10 +160,17 @@ class ClassificationPanel(QWidget):
         layout.addStretch()
 
     def _load_models(self) -> None:
-        """Load pre-trained models on startup."""
+        """Load pre-trained models and tradition routers on startup."""
         for name in ["basic", "bordes", "technological"]:
             try:
                 self._models[name] = ClassifierModel.load_pre_trained(name)
+            except FileNotFoundError:
+                pass
+            # Load tradition router for this typology (pre-load with OAP)
+            try:
+                self._tradition_models[name] = ClassifierModel.load_pre_trained(
+                    name, tradition="OAP"
+                )
             except FileNotFoundError:
                 pass
 
@@ -162,9 +189,26 @@ class ClassificationPanel(QWidget):
         if self._auto_check.isChecked() and self._current_mesh is not None:
             self._on_classify()
 
+    def _on_tradition_changed(self, text: str) -> None:
+        """Handle tradition dropdown change. Re-classify if auto mode."""
+        self._populate_correction_combo()
+        if self._auto_check.isChecked() and self._current_mesh is not None:
+            self._on_classify()
+
     def _populate_correction_combo(self) -> None:
-        """Fill correction combo with classes from the current model."""
+        """Fill correction combo with classes from the current model / tradition."""
         self._correct_combo.clear()
+        tradition_val = self._get_tradition_value()
+        if tradition_val is not None:
+            # Use tradition router's classes for the selected tradition
+            router_model = self._get_tradition_router()
+            if router_model is not None and router_model._router is not None:
+                classes = router_model._router.tradition_classes.get(
+                    tradition_val, []
+                )
+                for cls_name in sorted(classes):
+                    self._correct_combo.addItem(cls_name)
+                return
         model = self._get_current_model()
         if model is not None and model.is_loaded():
             for cls_name in sorted(model._classes):
@@ -181,6 +225,25 @@ class ClassificationPanel(QWidget):
         key = typology_map.get(self._typology_combo.currentText(), "basic")
         return self._models.get(key)
 
+    def _get_tradition_value(self) -> Optional[str]:
+        """Get the internal tradition identifier from the combo, or None for Auto."""
+        for display, data in TRADITION_ITEMS:
+            if display == self._tradition_combo.currentText():
+                return data
+        return None
+
+    def _get_tradition_router(self) -> Optional[ClassifierModel]:
+        """Get the tradition-router model for the current typology, if loaded."""
+        typology_map = {
+            "Basic Morphological": "basic",
+            "Bordes Typology": "bordes",
+            "Technological": "technological",
+        }
+        key = typology_map.get(self._typology_combo.currentText())
+        if key is None:
+            return None
+        return self._tradition_models.get(key)
+
     # ── Classification ──
 
     def _on_classify(self) -> None:
@@ -190,9 +253,28 @@ class ClassificationPanel(QWidget):
             self._result_group.setVisible(True)
             return
 
-        model = self._get_current_model()
+        tradition_val = self._get_tradition_value()
+
+        if tradition_val is not None:
+            # Use tradition-router model
+            model = self._get_tradition_router()
+            if model is None or model._router is None:
+                self._label_display.setText(
+                    "Tradition model not available for this typology"
+                )
+                self._confidence_display.setText(
+                    "Pre-trained tradition models may need to be generated first. "
+                    "Run: python -m lithicore.data.generate_training_data"
+                )
+                self._result_group.setVisible(True)
+                return
+        else:
+            model = self._get_current_model()
+
         if model is None or not model.is_loaded():
-            self._label_display.setText(f"Model not available — try a different typology")
+            self._label_display.setText(
+                "Model not available — try a different typology"
+            )
             self._confidence_display.setText(
                 "Pre-trained models may need to be generated first. "
                 "Run: python -m lithicore.data.generate_training_data"
@@ -201,7 +283,7 @@ class ClassificationPanel(QWidget):
             return
 
         fv = extract_features(self._current_mesh)
-        result = model.predict(fv)
+        result = model.predict(fv, tradition=tradition_val)
         self._current_result = result
         self._show_result(result)
 
@@ -260,7 +342,10 @@ class ClassificationPanel(QWidget):
         if not correct_label:
             return
 
-        model = self._get_current_model()
+        if self._get_tradition_value() is not None:
+            model = self._get_tradition_router()
+        else:
+            model = self._get_current_model()
         if model is None:
             return
 
@@ -271,7 +356,10 @@ class ClassificationPanel(QWidget):
 
     def _on_debounced_retrain(self) -> None:
         """Check retrain threshold after correction debounce."""
-        model = self._get_current_model()
+        if self._get_tradition_value() is not None:
+            model = self._get_tradition_router()
+        else:
+            model = self._get_current_model()
         if model is not None:
             retrained = model.retrain_if_ready(threshold=10)
             if retrained:
@@ -324,8 +412,11 @@ class ClassificationPanel(QWidget):
             )
 
     def has_model(self) -> bool:
-        """Check if the current typology has a loaded model."""
-        model = self._get_current_model()
+        """Check if the current typology / tradition has a loaded model."""
+        if self._get_tradition_value() is not None:
+            model = self._get_tradition_router()
+        else:
+            model = self._get_current_model()
         return model is not None and model.is_loaded()
 
     def get_overlay_enabled(self) -> bool:

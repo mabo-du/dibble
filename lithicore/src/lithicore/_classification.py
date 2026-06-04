@@ -747,6 +747,8 @@ class ClassifierModel:
         self._correction_count: int = 0
         self._onnx_session = None
         self._onnx_loaded = False
+        self._router: Optional[TraditionRouter] = None
+        self._tradition: Optional[str] = None
 
         if model_path is not None:
             self._load(model_path)
@@ -834,15 +836,44 @@ class ClassifierModel:
         return model
 
     def is_loaded(self) -> bool:
-        """Check if a trained model is loaded (sklearn or ONNX)."""
+        """Check if a trained model is loaded (sklearn or ONNX or tradition router)."""
         return (
             (self._model is not None and len(self._classes) > 0)
             or getattr(self, "_onnx_loaded", False)
+            or self._router is not None
         )
 
     @classmethod
-    def load_pre_trained(cls, typology_name: str) -> ClassifierModel:
-        """Load one of the shipped pre-trained models."""
+    def load_pre_trained(
+        cls,
+        typology_name: str,
+        tradition: Optional[str] = None,
+    ) -> ClassifierModel:
+        """Load one of the shipped pre-trained models.
+
+        Args:
+            typology_name: One of "basic", "bordes", "technological".
+            tradition: Optional tradition name to load a tradition-router model.
+                When provided, loads the ``*_traditions.joblib`` file containing
+                a TraditionRouter. Pass ``None`` to load the standard model.
+
+        Returns:
+            A ClassifierModel instance.
+        """
+        if tradition is not None:
+            path = MODEL_DIR / f"typology_{typology_name}_traditions.joblib"
+            if not path.exists():
+                raise FileNotFoundError(
+                    f"Tradition model not found: {path}. "
+                    f"Run training data generation first."
+                )
+            router: TraditionRouter = joblib.load(str(path))
+            model = cls(typology_name=typology_name)
+            model._router = router
+            model._tradition = tradition
+            model._classes = router.tradition_classes.get(tradition, [])
+            return model
+
         path = MODEL_DIR / f"typology_{typology_name}.joblib"
         if not path.exists():
             raise FileNotFoundError(
@@ -851,8 +882,22 @@ class ClassifierModel:
             )
         return cls(typology_name=typology_name, model_path=path)
 
-    def predict(self, feature_vector: LithicFeatureVector) -> ClassificationResult:
-        """Classify a single artefact and return an explained result."""
+    def predict(
+        self,
+        feature_vector: LithicFeatureVector,
+        tradition: Optional[str] = None,
+    ) -> ClassificationResult:
+        """Classify a single artefact and return an explained result.
+
+        Args:
+            feature_vector: Extracted morphometric features of the artefact.
+            tradition: Optional tradition override. When the model holds a
+                TraditionRouter and this is provided, the router dispatches
+                to the matching tradition's sub-model. Ignored for standard models.
+
+        Returns:
+            A ClassificationResult with label, confidence, and explanations.
+        """
         if not self.is_loaded():
             raise RuntimeError("No model loaded. Call load_pre_trained() or train() first.")
 
@@ -860,6 +905,11 @@ class ClassifierModel:
         core = feature_vector.to_array().reshape(1, -1)
         inter = compute_interactions(core[0]).reshape(1, -1)
         X = np.concatenate([core, inter], axis=1)
+
+        # Tradition router branch
+        if self._router is not None:
+            trad = tradition or self._tradition or "oap"
+            return self._predict_via_router(feature_vector, X, trad)
 
         probs = self._model.predict_proba(X)[0]
         class_idx = int(np.argmax(probs))
@@ -909,6 +959,60 @@ class ClassifierModel:
             warnings=[],
         )
 
+    def _predict_via_router(
+        self,
+        fv: LithicFeatureVector,
+        X: np.ndarray,
+        tradition: str,
+    ) -> ClassificationResult:
+        """Predict using the tradition-router sub-model for *tradition*."""
+        router = self._router
+        # Label via the router
+        label = str(router.predict(X, tradition=tradition)[0])
+
+        # Probabilities from the router
+        probs = router.predict_proba(X, tradition=tradition)[0]
+        classes = router.tradition_classes.get(tradition, self._classes)
+
+        prob_dict: dict[str, float] = {}
+        for i, cls_name in enumerate(classes):
+            prob_dict[cls_name] = round(float(probs[i]), 4)
+
+        confidence = round(float(prob_dict.get(label, 0.0)), 4)
+
+        # Feature importances from the tradition sub-model (if it exposes them)
+        top_features: list[FeatureImportance] = []
+        sub = router.models.get(tradition)
+        importances: Optional[np.ndarray] = None
+        if hasattr(sub, "root_rf") and sub.root_rf is not None:
+            importances = sub.root_rf.feature_importances_
+        elif hasattr(sub, "_model"):
+            m = sub._model
+            if hasattr(m, "feature_importances_"):
+                importances = m.feature_importances_
+            elif hasattr(m, "calibrated_classifiers_"):
+                importances = m.calibrated_classifiers_[0].estimator.feature_importances_
+        if importances is not None:
+            top_features = self._compute_feature_importances(fv, importances)
+
+        alternatives = [
+            (cls_name, round(float(probs[i]), 4))
+            for i, cls_name in enumerate(classes)
+            if cls_name != label and probs[i] > 0.01
+        ]
+        alternatives.sort(key=lambda x: x[1], reverse=True)
+
+        return ClassificationResult(
+            label=label,
+            confidence=confidence,
+            probabilities=prob_dict,
+            top_features=top_features[:5],
+            alternatives=alternatives[:3],
+            typology_name=f"{self.typology_name}/{tradition}",
+            processing_time_s=0.0,
+            warnings=[],
+        )
+
     def _compute_feature_importances(
         self, fv: LithicFeatureVector, importances: np.ndarray
     ) -> list[FeatureImportance]:
@@ -954,8 +1058,7 @@ class ClassifierModel:
         """Retrain model if correction queue >= threshold. Returns True if retraining occurred."""
         if self._correction_count < threshold:
             return False
-        self._retrain()
-        return True
+        return self._retrain()
 
     def predict_conformal(
         self, feature_vector: LithicFeatureVector,
@@ -1027,10 +1130,20 @@ class ClassifierModel:
             warnings=[f"Prediction set: {', '.join(prediction_set)}"] if len(prediction_set) > 1 else [],
         )
 
-    def _retrain(self) -> None:
-        """Retrain on accumulated corrections."""
+    def _retrain(self) -> bool:
+        """Retrain on accumulated corrections.
+
+        Returns:
+            True if retraining occurred, False if skipped (router model,
+            empty queue, or no model loaded).
+
+        Note: tradition-router models do not support retraining — the method
+        returns False when a router is present.
+        """
+        if self._router is not None:
+            return False
         if not self._correction_queue or not self.is_loaded():
-            return
+            return False
 
         X_corrections = np.array([item[0] for item in self._correction_queue])
         y_corrections = [item[1] for item in self._correction_queue]
@@ -1045,6 +1158,7 @@ class ClassifierModel:
         self._classes = sorted(set(y_corrections))
         self._correction_queue = []
         self._correction_count = 0
+        return True
 
 
 # ── Interaction features (derived from the 22 core morphometrics) ──

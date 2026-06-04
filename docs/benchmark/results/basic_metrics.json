@@ -1,68 +1,68 @@
 {
-  "accuracy": 0.9499,
+  "accuracy": 0.9488,
   "per_class": [
     {
       "class": "Biface",
-      "precision": 0.993,
+      "precision": 0.988,
       "recall": 0.971,
-      "f1": 0.982,
+      "f1": 0.979,
       "support": 1018
     },
     {
       "class": "Blade",
-      "precision": 0.99,
-      "recall": 0.967,
-      "f1": 0.978,
+      "precision": 0.989,
+      "recall": 0.961,
+      "f1": 0.974,
       "support": 993
     },
     {
       "class": "Core",
-      "precision": 0.896,
-      "recall": 0.963,
-      "f1": 0.928,
+      "precision": 0.9,
+      "recall": 0.961,
+      "f1": 0.93,
       "support": 751
     },
     {
       "class": "Experimental Core",
-      "precision": 0.958,
+      "precision": 0.962,
       "recall": 1.0,
-      "f1": 0.979,
+      "f1": 0.981,
       "support": 254
     },
     {
       "class": "Flake",
-      "precision": 0.81,
-      "recall": 0.782,
-      "f1": 0.796,
+      "precision": 0.798,
+      "recall": 0.786,
+      "f1": 0.792,
       "support": 262
     },
     {
       "class": "Retouched Flake",
-      "precision": 0.925,
-      "recall": 0.86,
-      "f1": 0.891,
+      "precision": 0.926,
+      "recall": 0.877,
+      "f1": 0.901,
       "support": 57
     },
     {
       "class": "Unmodified Cobble",
       "precision": 1.0,
-      "recall": 0.633,
-      "f1": 0.776,
+      "recall": 0.667,
+      "f1": 0.8,
       "support": 30
     },
     {
       "class": "Unmodified Flake",
-      "precision": 0.868,
+      "precision": 0.885,
       "recall": 0.92,
-      "f1": 0.893,
+      "f1": 0.902,
       "support": 50
     }
   ],
   "confusion_matrix": [
     [
       988,
-      0,
-      28,
+      2,
+      26,
       0,
       2,
       0,
@@ -70,21 +70,21 @@
       0
     ],
     [
+      5,
+      954,
+      2,
       0,
-      960,
-      3,
-      0,
-      30,
+      32,
       0,
       0,
       0
     ],
     [
       6,
-      6,
-      723,
+      5,
+      722,
       0,
-      16,
+      18,
       0,
       0,
       0
@@ -102,9 +102,9 @@
     [
       1,
       4,
-      52,
+      51,
       0,
-      205,
+      206,
       0,
       0,
       0
@@ -115,18 +115,18 @@
       1,
       0,
       0,
-      49,
+      50,
       0,
-      7
+      6
     ],
     [
       0,
       0,
       0,
-      11,
+      10,
       0,
       0,
-      19,
+      20,
       0
     ],
     [
@@ -152,7 +152,7 @@
   ],
   "n_samples": 3415,
   "n_classes": 8,
-  "classification_report": "                   precision    recall  f1-score   support\n\n           Biface       0.99      0.97      0.98      1018\n            Blade       0.99      0.97      0.98       993\n             Core       0.90      0.96      0.93       751\nExperimental Core       0.96      1.00      0.98       254\n            Flake       0.81      0.78      0.80       262\n  Retouched Flake       0.92      0.86      0.89        57\nUnmodified Cobble       1.00      0.63      0.78        30\n Unmodified Flake       0.87      0.92      0.89        50\n\n         accuracy                           0.95      3415\n        macro avg       0.93      0.89      0.90      3415\n     weighted avg       0.95      0.95      0.95      3415\n",
+  "classification_report": "                   precision    recall  f1-score   support\n\n           Biface       0.99      0.97      0.98      1018\n            Blade       0.99      0.96      0.97       993\n             Core       0.90      0.96      0.93       751\nExperimental Core       0.96      1.00      0.98       254\n            Flake       0.80      0.79      0.79       262\n  Retouched Flake       0.93      0.88      0.90        57\nUnmodified Cobble       1.00      0.67      0.80        30\n Unmodified Flake       0.88      0.92      0.90        50\n\n         accuracy                           0.95      3415\n        macro avg       0.93      0.89      0.91      3415\n     weighted avg       0.95      0.95      0.95      3415\n",
   "name": "basic",
   "display_name": "Basic Morphological",
   "n_features": 47

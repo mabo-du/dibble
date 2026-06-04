@@ -1,39 +1,39 @@
 {
-  "accuracy": 0.9496,
+  "accuracy": 0.9488,
   "per_class": [
     {
       "class": "Biface",
-      "precision": 0.992,
-      "recall": 0.971,
-      "f1": 0.981,
+      "precision": 0.99,
+      "recall": 0.97,
+      "f1": 0.98,
       "support": 1018
     },
     {
       "class": "Blade",
-      "precision": 0.99,
-      "recall": 0.968,
-      "f1": 0.979,
+      "precision": 0.988,
+      "recall": 0.962,
+      "f1": 0.974,
       "support": 993
     },
     {
       "class": "Core",
-      "precision": 0.895,
+      "precision": 0.899,
       "recall": 0.961,
-      "f1": 0.927,
+      "f1": 0.929,
       "support": 751
     },
     {
       "class": "Experimental Core",
-      "precision": 0.958,
+      "precision": 0.962,
       "recall": 1.0,
-      "f1": 0.979,
+      "f1": 0.981,
       "support": 254
     },
     {
       "class": "Flake",
-      "precision": 0.813,
-      "recall": 0.779,
-      "f1": 0.795,
+      "precision": 0.802,
+      "recall": 0.79,
+      "f1": 0.796,
       "support": 262
     },
     {
@@ -46,8 +46,8 @@
     {
       "class": "Unmodified Cobble",
       "precision": 1.0,
-      "recall": 0.633,
-      "f1": 0.776,
+      "recall": 0.667,
+      "f1": 0.8,
       "support": 30
     },
     {
@@ -60,9 +60,9 @@
   ],
   "confusion_matrix": [
     [
-      988,
-      0,
-      28,
+      987,
+      2,
+      27,
       0,
       2,
       0,
@@ -70,21 +70,21 @@
       0
     ],
     [
+      5,
+      955,
+      2,
       0,
-      961,
-      3,
-      0,
-      29,
+      31,
       0,
       0,
       0
     ],
     [
-      7,
+      5,
       6,
       722,
       0,
-      16,
+      18,
       0,
       0,
       0
@@ -100,11 +100,11 @@
       0
     ],
     [
-      1,
-      4,
-      53,
       0,
-      204,
+      4,
+      51,
+      0,
+      207,
       0,
       0,
       0
@@ -123,10 +123,10 @@
       0,
       0,
       0,
-      11,
+      10,
       0,
       0,
-      19,
+      20,
       0
     ],
     [
@@ -152,7 +152,7 @@
   ],
   "n_samples": 3415,
   "n_classes": 8,
-  "classification_report": "                   precision    recall  f1-score   support\n\n           Biface       0.99      0.97      0.98      1018\n            Blade       0.99      0.97      0.98       993\n             Core       0.89      0.96      0.93       751\nExperimental Core       0.96      1.00      0.98       254\n            Flake       0.81      0.78      0.80       262\n  Retouched Flake       0.92      0.86      0.89        57\nUnmodified Cobble       1.00      0.63      0.78        30\n Unmodified Flake       0.87      0.92      0.89        50\n\n         accuracy                           0.95      3415\n        macro avg       0.93      0.89      0.90      3415\n     weighted avg       0.95      0.95      0.95      3415\n",
+  "classification_report": "                   precision    recall  f1-score   support\n\n           Biface       0.99      0.97      0.98      1018\n            Blade       0.99      0.96      0.97       993\n             Core       0.90      0.96      0.93       751\nExperimental Core       0.96      1.00      0.98       254\n            Flake       0.80      0.79      0.80       262\n  Retouched Flake       0.92      0.86      0.89        57\nUnmodified Cobble       1.00      0.67      0.80        30\n Unmodified Flake       0.87      0.92      0.89        50\n\n         accuracy                           0.95      3415\n        macro avg       0.93      0.89      0.91      3415\n     weighted avg       0.95      0.95      0.95      3415\n",
   "name": "bordes",
   "display_name": "Bordes Typology",
   "n_features": 47
