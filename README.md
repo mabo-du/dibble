@@ -231,6 +231,8 @@ Trained on **3,415 real-world 3D scans** from five assemblages across three cont
 | Lombao Experimental Cores | Spain | 284 | Structured light | Modern (controlled) |
 | Morales Experimental Retouch | Spain | 100 | Structured light | Modern (controlled) |
 
+*The Open Aurignacian Project datasets (Fumane, Castelcivita, Cala, Bombrini) were generously made available by **[Armando Falcucci](https://www.armandofalcucci.com/)** and colleagues at the University of Southampton and the University of Tübingen. These open-access repositories of high-resolution 3D lithic models have been invaluable. If you use Dibble with Aurignacian material, please consider citing their work — full references can be found in the [research papers directory](docs/research-papers/).*
+
 ---
 
 ## 📋 Requirements
