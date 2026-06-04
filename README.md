@@ -60,6 +60,8 @@ Dibble is a **research tool (v0.4.0-beta)**, not a commercial product. Please re
 ### Geographic bias
 ~70% of training data comes from **Italian Aurignacian sites** (Fumane, Castelcivita, Cala, Bombrini). The combined model achieves **86.1% 5-fold CV** on this data but performs **significantly worse on non-European assemblages**. We now provide **tradition-specific models** (OAP, COADS, Levantine, Experimental) — select the appropriate tradition from the GUI dropdown to get honest, per-tradition accuracy.
 
+**Dataset contributions from the archaeological community are warmly welcomed.** If you have 3D scans of lithic assemblages from under-represented regions or time periods, please open an issue or pull request — every new tradition improves the classifier's ability to serve the whole field, not just one corner of it.
+
 ### Class imbalance
 | Class | Samples | Reliability |
 |-------|---------|-------------|
