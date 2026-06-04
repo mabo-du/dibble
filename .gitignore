@@ -25,3 +25,16 @@ docs/benchmark/results/*.html
 .vscode/
 .idea/
 *.iml
+
+# AI agent / framework config (personal development environment)
+.aidevops.json
+AGENTS.md
+CLAUDE.md
+.cc
+.agents/
+.claude/
+todo/
+
+# PH feature cache (reproducible via batch_ph.py)
+.ph_*.npy
+.ph_*.json
