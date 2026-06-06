@@ -5,36 +5,114 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
-  release:
+  # ── Build Python wheels ─────────────────────────────────────────────────
+  build-wheels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build lithicore wheel
+        run: |
+          pip install build
+          python -m build lithicore/ --wheel --outdir dist/
+
+      - name: Build lithicope wheel
+        run: python -m build lithicope/ --wheel --outdir dist/
+
+      - name: Upload wheels as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-wheels
+          path: dist/*.whl
+
+  # ── Publish to PyPI ─────────────────────────────────────────────────────
+  publish-pypi:
+    needs: build-wheels
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: python-wheels
+          path: dist/
+
+      - name: Publish lithicore + lithicope to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+          skip-existing: true
+
+  # ── Desktop builds (lithicope — PyQt6+pyvista) ─────────────────────────
+  build-desktop:
+    needs: build-wheels
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            asset-name: lithicope-linux
+          - os: macos-latest
+            asset-name: lithicope-macos
+          - os: windows-latest
+            asset-name: lithicope-windows
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install pyinstaller
+          pip install ./lithicore
+          pip install ./lithicope
+
+      - name: Build PyInstaller executable
+        run: |
+          pyinstaller --onefile --name lithicope --add-data "lithicope/data:lithicope/data" lithicope/src/lithicope/main.py 2>/dev/null || \
+          pyinstaller --onefile --name lithicope lithicope/src/lithicope/main.py
+        continue-on-error: true
+
+      - name: Upload desktop artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset-name }}
+          path: dist/lithicope*
+
+  # ── GitHub Release ─────────────────────────────────────────────────────
+  create-release:
+    needs: [build-wheels, build-desktop, publish-pypi]
+    if: always()
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Generate release notes
-        id: notes
-        run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-          echo "previous_tag=$PREV_TAG" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: '*'
+          merge-multiple: true
+          path: dist/
 
-      - name: Create Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: Dibble ${{ github.ref_name }}
           generate_release_notes: true
-          body: |
-            ## Dibble ${{ github.ref_name }}
-
-            See the [README](https://github.com/mabo-du/dibble#readme) for full feature documentation.
-
-            ### Installation
-            ```bash
-            pip install lithicore lithicope
-            ```
-            
-            ### What's Changed
-            Full commit log: https://github.com/mabo-du/dibble/compare/${{ steps.notes.outputs.previous_tag }}...${{ github.ref_name }}
+          files: |
+            dist/*.whl
+            dist/lithicope*
+          fail_on_unmatched_files: false
