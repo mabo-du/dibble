@@ -80,9 +80,9 @@ jobs:
 
       - name: Build PyInstaller executable
         run: |
-          pyinstaller --onefile --name lithicope --add-data "lithicope/data:lithicope/data" lithicope/src/lithicope/main.py 2>/dev/null || \
-          pyinstaller --onefile --name lithicope lithicope/src/lithicope/main.py
-        continue-on-error: true
+          pyinstaller --onefile \
+            --name "${{ matrix.asset-name }}" \
+            lithicope/src/lithicope/main.py
 
       - name: Upload desktop artifact
         uses: actions/upload-artifact@v4
