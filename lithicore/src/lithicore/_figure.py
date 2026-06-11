@@ -6,6 +6,7 @@ rules:   Requires an oriented mesh and a PyVista plotter with the mesh loaded.
          Uses VTK GL2PS for pure vector output — no raster intermediates.
          Output is an SVG string with three views + scale bar + callouts + ID.
 agent:   deepseek-v4-flash | 2026-05-26 | Initial implementation
+         deepseek-v4-pro | 2026-06-12 | Fixed temp file race (UUID-based prefix, temp dir); XML-escaped artefact label
 """
 
 from __future__ import annotations
@@ -75,6 +76,9 @@ def _camera_positions(mesh_center, extent):
 
 def _export_view_svg(plotter, cam_pos, cam_focal, cam_up, view_size=(800, 600)) -> str:
     """Capture the current scene as an SVG string using VTK GL2PS."""
+    import tempfile
+    import uuid
+
     renderer = plotter.renderer
     camera = renderer.GetActiveCamera()
     camera.SetParallelProjection(True)
@@ -85,6 +89,7 @@ def _export_view_svg(plotter, cam_pos, cam_focal, cam_up, view_size=(800, 600)) 
     plotter.window_size = view_size
     plotter.render()
 
+    tmp_prefix = Path(tempfile.gettempdir()) / f"lithic_temp_{uuid.uuid4().hex}"
     exporter = vtkGL2PSExporter()
     exporter.SetRenderWindow(plotter.render_window)
     exporter.SetFileFormatToSVG()
@@ -92,16 +97,16 @@ def _export_view_svg(plotter, cam_pos, cam_focal, cam_up, view_size=(800, 600)) 
     exporter.SetWrite3DPropsAsRaster(False)
     exporter.CompressOff()
     exporter.SetFilePattern("%s")
-    exporter.SetFilePrefix("lithic_temp")
+    exporter.SetFilePrefix(str(tmp_prefix))
     exporter.Write()
 
-    svg_path = Path("lithic_temp.svg")
+    svg_path = Path(str(tmp_prefix) + ".svg")
     if svg_path.exists():
         svg_content = svg_path.read_text()
         svg_path.unlink()
     else:
         svg_content = ""
-    for p in Path(".").glob("lithic_temp*"):
+    for p in Path(tempfile.gettempdir()).glob(f"{tmp_prefix.name}*"):
         p.unlink()
     return svg_content
 
@@ -249,6 +254,7 @@ def _compose_figure_svg(
     mesh_extent: float = 1.0,
 ) -> str:
     """Compose individual view SVGs into a single publication plate SVG."""
+    from xml.sax.saxutils import escape as xml_escape
     view_width = 600
     view_height = 450
     margin = 40
@@ -313,7 +319,7 @@ def _compose_figure_svg(
     id_x = total_width - margin - 150
     id_y = scale_bar_y
     svg_lines.append(f'  <g transform="translate({id_x}, {id_y})">')
-    svg_lines.append(f'    <text x="0" y="0" class="label">{config.artefact_label or "Unlabelled"}</text>')
+    svg_lines.append(f'    <text x="0" y="0" class="label">{xml_escape(config.artefact_label or "Unlabelled")}</text>')
     svg_lines.append('  </g>')
 
     svg_lines.append('</svg>')

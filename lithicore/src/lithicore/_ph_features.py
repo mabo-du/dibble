@@ -20,6 +20,7 @@ Signal test results (June 2026):
     - PH only (15 PCA components): 41.9%
     - Combined (32 + PH):          47.7%  (+3.9pp)
     → PH SIGNAL DETECTED, proceeding to full implementation.
+agent:   deepseek-v4-pro | 2026-06-12 | Fixed global np.random.seed → local default_rng for thread safety
 """
 
 from __future__ import annotations
@@ -95,8 +96,10 @@ def compute_persistence_diagram(
     # Subsample
     if len(verts) > n_points:
         if seed is not None:
-            np.random.seed(seed)
-        idx = np.random.choice(len(verts), n_points, replace=False)
+            rng = np.random.default_rng(seed)
+            idx = rng.choice(len(verts), n_points, replace=False)
+        else:
+            idx = np.random.choice(len(verts), n_points, replace=False)
         verts = verts[idx]
 
     # Alpha complex

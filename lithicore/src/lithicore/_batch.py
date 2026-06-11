@@ -6,6 +6,7 @@ rules:   Iterates all .ply, .obj, .stl files in directory.
          Each artefact: validate -> repair (if configured) -> orient -> measure.
          Returns ArtefactResult list with one entry per file.
 agent:   deepseek-v4-flash | 2026-05-26 | Initial implementation
+         deepseek-v4-pro | 2026-06-12 | Removed wasted detect_edges call (result was discarded)
 """
 
 from __future__ import annotations
@@ -84,9 +85,6 @@ def batch_process(
             all_measurements.append(epa)
         if ipa:
             all_measurements.append(ipa)
-
-        # Edge detection (for visualisation, not exported as measurement yet)
-        detect_edges(oriented, config)
 
         results.append(ArtefactResult(
             file_path=filepath,

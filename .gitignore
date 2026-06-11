@@ -35,6 +35,8 @@ CLAUDE.md
 .claude/
 todo/
 
-# PH feature cache (reproducible via batch_ph.py)
+# PH feature cache (reproducible via batch_ph.py; cache lives in ~/.cache/dibble/ph_features/)
+# These patterns catch PH artifacts inadvertently generated in the project root.
+.ph_cache/
 .ph_*.npy
 .ph_*.json

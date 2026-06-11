@@ -17,6 +17,7 @@ rules:   No GUI imports. Every public function takes a mesh + config and returns
 agent:   deepseek-v4-flash | 2026-05-26 | Initial scaffolding
          deepseek-v4-flash | 2026-05-26 | All modules wired — full public API exported
          deepseek-v4-flash | 2026-05-26 | Added FigureConfig + generate_figure export
+         deepseek-v4-pro | 2026-06-12 | Added AssistantResult to __all__ and imports
 """
 
 # pylint: disable=unused-import
@@ -31,6 +32,7 @@ try:
         ClassificationResult,
         FeatureImportance,
         LithicFeatureVector,
+        AssistantResult,
     )
     from lithicore._orientation import orient_auto, orient_manual
     from lithicore._metrics import extract_metrics
@@ -99,7 +101,7 @@ try:
         "ClassificationResult", "FeatureImportance", "LithicFeatureVector",
         "ClassifierModel", "extract_features", "train_model",
         "extract_diagnostic_coordinates",
-        "AssistantEngine",
+        "AssistantEngine", "AssistantResult",
     ]
 except ImportError as _exc:
     # Forward reference — all modules exist since Phases 2-4

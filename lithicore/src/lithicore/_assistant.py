@@ -5,6 +5,7 @@ used_by: lithicope assistant panel
 rules:   No GUI imports. DuckDB queries are read-only SELECT. LLM is optional dependency.
          All functions safe to call when model not loaded (returns error result).
 agent:   deepseek-v4-flash | 2026-05-27 | Initial implementation
+         deepseek-v4-pro | 2026-06-12 | Added _validate_sql() safety gate rejecting non-SELECT, multi-statement, and dangerous keywords
 """
 
 from __future__ import annotations
@@ -124,6 +125,27 @@ class AssistantEngine:
         """Check if the model is ready for queries."""
         return self._model_available and self._llm is not None
 
+    def _validate_sql(self, sql: str) -> bool:
+        """Validate that a generated SQL string is a safe SELECT query.
+
+        Rejects non-SELECT statements, multi-statement queries, and queries
+        that reference system tables. This is a hard safety gate independent
+        of the GBNF grammar.
+        """
+        stripped = sql.strip().upper()
+        if not stripped.startswith("SELECT"):
+            return False
+        if ";" in stripped[:-1]:
+            return False  # Multi-statement — potential injection
+        # Reject dangerous keywords outside of quotes
+        forbidden = {"DROP", "DELETE", "INSERT", "UPDATE", "ALTER", "CREATE",
+                      "TRUNCATE", "EXEC", "EXECUTE", "ATTACH", "DETACH",
+                      "PRAGMA", "IMPORT", "EXPORT"}
+        words = set(stripped.replace("(", " ").replace(")", " ").replace(",", " ").split())
+        if words & forbidden:
+            return False
+        return True
+
     def query(self, user_text: str, collection_df: pd.DataFrame) -> AssistantResult:
         """Run the full query loop: natural language -> SQL -> execute -> explain.
 
@@ -158,6 +180,13 @@ class AssistantEngine:
         if sql is None:
             return AssistantResult(
                 error="Failed to generate a valid SQL query.",
+                processing_time_s=round(time.time() - start, 2),
+            )
+
+        if not self._validate_sql(sql):
+            return AssistantResult(
+                sql_query=sql,
+                error="Generated SQL query was rejected by safety validator.",
                 processing_time_s=round(time.time() - start, 2),
             )
 

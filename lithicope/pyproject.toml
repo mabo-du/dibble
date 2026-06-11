@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lithicope"
-version = "0.4.0-beta"
+version = "0.4.1-beta"
 description = "Desktop GUI for 3D lithic morphological analysis"
 requires-python = ">=3.11"
 dependencies = [

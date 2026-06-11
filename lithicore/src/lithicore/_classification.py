@@ -7,6 +7,7 @@ used_by: lithicope classification panel, CLI
 rules:   Pure functions + model wrapper. No GUI imports.
          Feature extraction ~0.1s per mesh. Model training ~1-2s typical.
 agent:   deepseek-v4-flash | 2026-05-27 | Initial implementation
+agent:   deepseek-v4-pro | 2026-06-12 | Fixed feature dimension mismatch: store n_features, pad missing PH dims with zeros. Added _infer_n_features, _pad_features, _pad_features_for_model.
 """
 
 from __future__ import annotations
@@ -749,6 +750,7 @@ class ClassifierModel:
         self._onnx_loaded = False
         self._router: Optional[TraditionRouter] = None
         self._tradition: Optional[str] = None
+        self._n_features: int = 0  # Number of features the model expects
 
         if model_path is not None:
             self._load(model_path)
@@ -761,11 +763,13 @@ class ClassifierModel:
             self._model = data["model"]
             self._classes = data["classes"]
             self.typology_name = data.get("typology_name", self.typology_name)
+            self._n_features = data.get("n_features", self._infer_n_features())
         else:
             # Legacy format: saved as a ClassifierModel object directly
             self._model = data._model
             self._classes = data._classes
             self.typology_name = data.typology_name
+            self._n_features = getattr(data, "_n_features", 0) or self._infer_n_features()
 
     def save(self, path: Path) -> None:
         """Save the trained model to a .joblib file."""
@@ -773,6 +777,7 @@ class ClassifierModel:
             "model": self._model,
             "classes": self._classes,
             "typology_name": self.typology_name,
+            "n_features": self._infer_n_features(),
         }
         path.parent.mkdir(parents=True, exist_ok=True)
         joblib.dump(data, str(path))
@@ -843,6 +848,47 @@ class ClassifierModel:
             or self._router is not None
         )
 
+    def _infer_n_features(self) -> int:
+        """Infer the number of input features the underlying model expects.
+
+        Checks the model, router sub-models, and ONNX session in order.
+        Returns 0 if feature count cannot be determined.
+        """
+        # Sklearn model (CalibratedClassifierCV wraps a base estimator)
+        if hasattr(self._model, "n_features_in_"):
+            return int(self._model.n_features_in_)
+        if hasattr(self._model, "calibrated_classifiers_"):
+            base = self._model.calibrated_classifiers_[0].estimator
+            if hasattr(base, "n_features_in_"):
+                return int(base.n_features_in_)
+        # Hierarchical or ordinal pipelines
+        if hasattr(self._model, "root_rf") and self._model.root_rf is not None:
+            if hasattr(self._model.root_rf, "n_features_in_"):
+                return int(self._model.root_rf.n_features_in_)
+        if hasattr(self._model, "level1") and self._model.level1 is not None:
+            if hasattr(self._model.level1, "n_features_in_"):
+                return int(self._model.level1.n_features_in_)
+        # Tradition router — check any sub-model
+        if self._router is not None and self._router.models:
+            for sub in self._router.models.values():
+                nf = _infer_model_n_features(sub)
+                if nf:
+                    return nf
+        return 0
+
+    def _pad_features(self, X: np.ndarray) -> np.ndarray:
+        """Pad feature matrix to match the model's expected input dimension.
+
+        Models trained with PH features expect more columns than the
+        32 core+interaction features generated at inference time.
+        Missing columns are zero-padded (zero PH signal = no extra information).
+        """
+        n_expected = self._n_features
+        if n_expected and n_expected > X.shape[1]:
+            padding = np.zeros((X.shape[0], n_expected - X.shape[1]))
+            X = np.concatenate([X, padding], axis=1)
+        return X
+
     @classmethod
     def load_pre_trained(
         cls,
@@ -874,6 +920,7 @@ class ClassifierModel:
             model._classes = router.tradition_classes.get(tradition, [])
             return model
 
+        # Standard model — never silently upgrade to router
         path = MODEL_DIR / f"typology_{typology_name}.joblib"
         if not path.exists():
             raise FileNotFoundError(
@@ -905,6 +952,7 @@ class ClassifierModel:
         core = feature_vector.to_array().reshape(1, -1)
         inter = compute_interactions(core[0]).reshape(1, -1)
         X = np.concatenate([core, inter], axis=1)
+        X = self._pad_features(X)
 
         # Tradition router branch
         if self._router is not None:
@@ -967,6 +1015,8 @@ class ClassifierModel:
     ) -> ClassificationResult:
         """Predict using the tradition-router sub-model for *tradition*."""
         router = self._router
+        # Pad features if the router sub-model expects more dimensions
+        X = _pad_features_for_model(X, router.models.get(tradition) if router.models else None)
         # Label via the router
         label = str(router.predict(X, tradition=tradition)[0])
 
@@ -1159,6 +1209,33 @@ class ClassifierModel:
         self._correction_queue = []
         self._correction_count = 0
         return True
+
+
+def _infer_model_n_features(model) -> int:
+    """Infer expected feature count from any model-like object."""
+    if hasattr(model, "n_features_in_"):
+        return int(model.n_features_in_)
+    if hasattr(model, "calibrated_classifiers_"):
+        base = model.calibrated_classifiers_[0].estimator
+        if hasattr(base, "n_features_in_"):
+            return int(base.n_features_in_)
+    if hasattr(model, "root_rf") and model.root_rf is not None:
+        if hasattr(model.root_rf, "n_features_in_"):
+            return int(model.root_rf.n_features_in_)
+    if hasattr(model, "level1") and model.level1 is not None:
+        if hasattr(model.level1, "n_features_in_"):
+            return int(model.level1.n_features_in_)
+    return 0
+
+
+def _pad_features_for_model(X: np.ndarray, model, n_expected: int = 0) -> np.ndarray:
+    """Pad feature matrix to match model's expected input dimension."""
+    if n_expected <= 0:
+        n_expected = _infer_model_n_features(model)
+    if n_expected and n_expected > X.shape[1]:
+        padding = np.zeros((X.shape[0], n_expected - X.shape[1]))
+        X = np.concatenate([X, padding], axis=1)
+    return X
 
 
 # ── Interaction features (derived from the 22 core morphometrics) ──

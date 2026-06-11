@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lithicore"
-version = "0.4.0-beta"
+version = "0.4.1-beta"
 description = "3D lithic artefact morphological measurement library"
 requires-python = ">=3.11"
 dependencies = [

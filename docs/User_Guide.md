@@ -1,6 +1,6 @@
 # Dibble User Guide
 
-> **Version:** 0.4.0-beta | **Last updated:** 2026-06-04
+> **Version:** 0.4.1-beta | **Last updated:** 2026-06-12
 
 Dibble is a desktop application for automated 3D lithic (stone tool) analysis — from photos to classified artefact, fully offline. This guide covers installation, the GUI workflow, the CLI tools, training custom classifiers, and understanding the accuracy of each component.
 
@@ -705,6 +705,7 @@ The main config file is `settings.toml`:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 0.4.1-beta | 2026-06 | Bug fixes: feature dimension alignment (PH padding), holes_filled counter, ruler scale guard, removed wasted computation, thread-safe numpy rng, AssistantResult exported, temp file race fix, SQL validation, SVG XML escaping |
 | 0.4.0-beta | 2026-06 | Tradition-aware models, PH features, hierarchical cascade, GUI tradition selector, edge-angle fix |
 | 0.1.0 | 2026-05 | Initial release — 3D viewer, photogrammetry, classification, AI Assistant |
 

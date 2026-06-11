@@ -55,7 +55,7 @@ lithicope
 
 ## ⚠️ Known Limitations
 
-Dibble is a **research tool (v0.4.0-beta)**, not a commercial product. Please read these before using the classifier in published research.
+Dibble is a **research tool (v0.4.1-beta)**, not a commercial product. Please read these before using the classifier in published research.
 
 ### Geographic bias
 ~70% of training data comes from **Italian Aurignacian sites** (Fumane, Castelcivita, Cala, Bombrini). The combined model achieves **86.1% 5-fold CV** on this data but performs **significantly worse on non-European assemblages**. We now provide **tradition-specific models** (OAP, COADS, Levantine, Experimental) — select the appropriate tradition from the GUI dropdown to get honest, per-tradition accuracy.
@@ -268,10 +268,22 @@ Trained on **3,415 real-world 3D scans** from five assemblages across three cont
   author    = {Bouck, M.},
   title     = {Dibble: Digital Image-Based Benchmark for Lithic Evaluation},
   year      = {2026},
-  version   = {0.4.0-beta},
+  version   = {0.4.1-beta},
   url       = {https://github.com/mabo-du/dibble},
 }
 ```
+
+---
+
+## 📝 Changelog
+
+| Version | Date | Changes |
+|---------|------|---------|
+| **0.4.1-beta** | 2026-06 | Bug-fix release: feature dimension alignment for PH-augmented models, `holes_filled` counter, ruler scale guard, thread-safe numpy RNG, `AssistantResult` public API, temp file race fix, SVG XSS hardening, SQL safety validator |
+| 0.4.0-beta | 2026-06 | Tradition-aware models, PH features, hierarchical cascade, GUI tradition selector, edge-angle fix |
+| 0.1.0 | 2026-05 | Initial release — 3D viewer, photogrammetry, classification, AI Assistant |
+
+Full details: [docs/User_Guide.md](docs/User_Guide.md#version-history)
 
 ---
 

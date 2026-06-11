@@ -8,6 +8,7 @@ rules:   validate_mesh never modifies the input mesh.
          Always check for non-manifold edges, holes, isolated vertices.
 agent:   deepseek-v4-flash | 2026-05-26 | Initial implementation
          deepseek-v4-flash | 2026-05-26 | Fixed trimesh API: merge_vertices, imported repair module
+         deepseek-v4-pro | 2026-06-12 | Fixed holes_filled counter: now flags >=1 hole filled via watertightness change
 """
 
 from __future__ import annotations
@@ -96,7 +97,10 @@ def repair_mesh(mesh: trimesh.Trimesh) -> tuple[MeshQualityReport, trimesh.Trime
     # Fill small holes
     holes_filled = 0
     try:
+        was_watertight = working.is_watertight
         trimesh.repair.fill_holes(working)
+        if not was_watertight:
+            holes_filled = 1  # At least one hole was filled (trimesh does not expose exact count)
     except (ValueError, AttributeError):
         pass
 

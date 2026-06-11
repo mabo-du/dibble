@@ -14,6 +14,7 @@ rules:   Zero GUI imports. Pure functions with dataclass configs.
 agent:   deepseek-v4-flash | 2026-05-26 | Initial scaffolding — dataclasses + error types
 agent:   deepseek-v4-flash | 2026-05-26 | Added colmap_available() + clean_point_cloud() + _crop_background() with spatial-spread floor for robust SOR
 agent:   deepseek-v4-flash | 2026-05-26 | Added ProgressCallback, _validate_inputs, _run_colmap_stage, run_pipeline with COLMAP subprocess orchestration
+         deepseek-v4-pro | 2026-06-12 | Fixed ruler scale: skip mesh scaling for 2D ruler results (not 3D scale factors)
 """
 
 from __future__ import annotations
@@ -526,29 +527,43 @@ def run_pipeline(
                         )
 
                 if scale_result is not None and scale_result.scale_factor != 1.0:
-                    if progress_cb:
-                        progress_cb(
-                            "scale_detection", 0.8,
-                            f"Applying scale: {scale_result.scale_factor:.4f} "
-                            f"({scale_result.method})",
+                    # Ruler detection produces a 2D pixel-per-mm estimate, not a
+                    # 3D mesh scale factor. Skip mesh scaling but record the finding.
+                    if scale_result.method == "ruler":
+                        warnings.append(
+                            f"Ruler detected (~{scale_result.scale_factor:.1f} px/mm). "
+                            "This is a 2D photo estimate — mesh remains in COLMAP units. "
+                            "Use ArUco markers for automatic 3D scaling."
                         )
+                        if progress_cb:
+                            progress_cb(
+                                "scale_detection", 1.0,
+                                f"Ruler detected (2D only): ~{scale_result.scale_factor:.1f} px/mm",
+                            )
+                    else:
+                        if progress_cb:
+                            progress_cb(
+                                "scale_detection", 0.8,
+                                f"Applying scale: {scale_result.scale_factor:.4f} "
+                                f"({scale_result.method})",
+                            )
 
-                    # Scale the fused point cloud
-                    cloud_mesh = trimesh.load(str(fused_ply))
-                    scaled_mesh = apply_scale_to_mesh(
-                        cloud_mesh, scale_result.scale_factor
-                    )
-                    scaled_mesh.export(str(fused_ply))
-
-                    if scale_result.warnings:
-                        warnings.extend(scale_result.warnings)
-
-                    if progress_cb:
-                        progress_cb(
-                            "scale_detection", 1.0,
-                            f"Scale: {scale_result.method}, "
-                            f"{scale_result.confidence:.0%} confidence",
+                        # Scale the fused point cloud
+                        cloud_mesh = trimesh.load(str(fused_ply))
+                        scaled_mesh = apply_scale_to_mesh(
+                            cloud_mesh, scale_result.scale_factor
                         )
+                        scaled_mesh.export(str(fused_ply))
+
+                        if scale_result.warnings:
+                            warnings.extend(scale_result.warnings)
+
+                        if progress_cb:
+                            progress_cb(
+                                "scale_detection", 1.0,
+                                f"Scale: {scale_result.method}, "
+                                f"{scale_result.confidence:.0%} confidence",
+                            )
                 elif scale_result is not None and scale_result.warnings:
                     warnings.extend(scale_result.warnings)
                     if progress_cb:

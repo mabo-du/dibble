@@ -10,6 +10,7 @@ rules:   Pure functions, no GUI imports. Scale detection operates on sparse clou
 agent:   deepseek-v4-flash | 2026-05-27 | Initial — dataclass + mesh transform
 agent:   deepseek-v4-flash | 2026-05-27 | Added ArUco detection + COLMAP I/O + triangulation
 agent:   deepseek-v4-flash | 2026-05-27 | Added ruler/scale bar detection via Hough lines
+         deepseek-v4-pro | 2026-06-12 | Clarified ruler returns px/mm not 3D scale; added warning to docstring
 """
 
 from __future__ import annotations
@@ -348,12 +349,19 @@ def detect_scale_ruler(
     and tick mark frequency analysis to locate a ruler and compute
     a pixel-per-mm estimate.
 
+    .. warning::
+       The returned ``scale_factor`` is a **pixels-per-mm** ratio derived
+       from 2D photo analysis. It is NOT a 3D mesh scale factor suitable
+       for ``apply_scale_to_mesh()``. Use ArUco markers for automatic 3D
+       scaling. The ruler method is a fallback diagnostic tool only.           
+
     Args:
         photo_dir: Directory containing input photos.
         sparse_dir: Optional — not used for this method (kept for API consistency).
 
     Returns:
         ScaleResult if a ruler was detected, None otherwise.
+        The scale_factor field contains px/mm (not a 3D scale).
     """
     try:
         import cv2
