@@ -79,6 +79,7 @@ jobs:
           pip install ./lithicope
 
       - name: Build PyInstaller executable
+        shell: bash
         run: |
           pyinstaller --onefile \
             --name "${{ matrix.asset-name }}" \
